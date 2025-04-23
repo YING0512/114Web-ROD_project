@@ -1,5 +1,4 @@
 #CNN MODEL IN PREPROCESS CODE WITH PREDICTED RESULT
-
 import os
 import cv2
 import numpy as np
