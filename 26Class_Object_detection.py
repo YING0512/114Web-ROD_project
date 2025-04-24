@@ -1,4 +1,5 @@
 #CNN MODEL IN PREPROCESS CODE WITH PREDICTED RESULT
+#程式截自 https://www.kaggle.com/code/ahmnazmul/object-detection
 import os
 import cv2
 import numpy as np
