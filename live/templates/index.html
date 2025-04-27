@@ -1,0 +1,61 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>YOLOv8 即時偵測</title>
+  <style>
+    /* 給 video 一個黑底，方便看邊框 */
+    #video { background: #000; }
+  </style>
+</head>
+<body>
+  <h2>手機相機即時物件偵測</h2>
+  <video id="video" width="320" height="240"
+         autoplay muted playsinline webkit-playsinline controls></video>
+  <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+  <img id="output" width="320" height="240" />
+
+  <script>
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const output = document.getElementById("output");
+    const ctx = canvas.getContext("2d");
+
+    const constraints = { video: { facingMode: "environment" } };
+    console.log("Requesting camera with", constraints);
+
+    navigator.mediaDevices.getUserMedia(constraints)
+      .then(stream => {
+        console.log("Got stream:", stream);
+        video.srcObject = stream;
+
+        // 附加一些 debug 事件
+        video.addEventListener("loadedmetadata", () => {
+          console.log("Video metadata loaded:", video.videoWidth, video.videoHeight);
+        });
+        video.addEventListener("play", () => {
+          console.log("Video started playing");
+        });
+
+        // 每 200ms 擷取影格送到後端
+        setInterval(() => {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL("image/jpeg");
+          fetch("/detect", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ image: dataUrl })
+          })
+          .then(res => res.json())
+          .then(data => { output.src = data.image; })
+          .catch(e => console.error("後端辨識錯誤：", e));
+        }, 200);
+      })
+      .catch(err => {
+        console.error("相機存取失敗：", err.name, err.message);
+        alert(`無法存取相機：${err.name}\n請確認已授權並且頁面為 HTTPS。`);
+      });
+  </script>
+</body>
+</html>

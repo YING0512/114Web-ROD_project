@@ -1,3 +1,4 @@
+# 訓練 CNN 模型  
 import os
 import cv2
 import numpy as np
