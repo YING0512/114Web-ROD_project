@@ -28,10 +28,10 @@ DEVICE     = "cuda" if torch.cuda.is_available() else "cpu"
 
 def resolve_path(base_dir: str, rel: str) -> str:
     """
-    1. 先试 direct = abspath(base_dir + rel)
+    1. 先試 direct = abspath(base_dir + rel)
        如果 exists → return direct
-    2. 否则 strip = rel.lstrip('./')
-       再试 alt = abspath(base_dir + strip)
+    2. 否則 strip = rel.lstrip('./')
+       再試 alt = abspath(base_dir + strip)
        如果 exists → return alt
     3. 否则报错
     """
@@ -43,7 +43,7 @@ def resolve_path(base_dir: str, rel: str) -> str:
     alt = os.path.abspath(os.path.join(base_dir, stripped))
     if os.path.exists(alt):
         return alt
-    raise FileNotFoundError(f"路径解析失败：{rel} → {direct} / {alt}")
+    raise FileNotFoundError(f"路徑解析失敗：{rel} → {direct} / {alt}")
 
 def make_absolute_data_yaml(orig_yaml: str) -> str:
     base_dir = os.path.dirname(os.path.abspath(orig_yaml))
@@ -65,9 +65,9 @@ def main():
         print(f"ERROR: 找不到 {ORIG_YAML}", file=sys.stderr)
         sys.exit(1)
 
-    # 1. 生成绝对路径版 data.yaml
+    # 1. 生成絕對路徑版 data.yaml
     abs_yaml = make_absolute_data_yaml(ORIG_YAML)
-    print(f"生成绝对路径 data.yaml：{abs_yaml}")
+    print(f"生成絕對路徑 data.yaml：{abs_yaml}")
 
     # 2. 打印训练配置
     print("=== 训练配置 ===")
@@ -100,7 +100,7 @@ def main():
         os.path.dirname(abs_yaml),
         "runs", PROJECT, NAME, "weights", "best.pt"
     )
-    print(f"\n训练完成！最佳权重保存在：{best}")
+    print(f"\n訓練完成！最佳權重保存在：{best}")
 
 if __name__ == "__main__":
     main()
