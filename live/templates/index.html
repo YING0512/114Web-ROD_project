@@ -3,9 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>YOLOv8 即時偵測</title>
+  <title>即時辨識</title>
   <style>
-    /* 給 video 一個黑底，方便看邊框 */
     #video { background: #000; }
   </style>
 </head>
@@ -21,6 +20,11 @@
     const canvas = document.getElementById("canvas");
     const output = document.getElementById("output");
     const ctx = canvas.getContext("2d");
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      alert("你的瀏覽器不支援相機存取（getUserMedia）。");
+      throw new Error("getUserMedia not supported");
+    }
 
     const constraints = { video: { facingMode: "environment" } };
     console.log("Requesting camera with", constraints);
