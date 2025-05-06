@@ -1,7 +1,7 @@
-task: detect
+task: segment
 mode: train
-model: yolo11s.pt
-data: C:\ROD\senior-project-rod-4\data_abs.yaml
+model: yolo11s-seg.pt
+data: C:\ROD\senior project-ROD.v4i.coco-segmentation\data_abs.yaml
 epochs: 50
 time: null
 patience: 100

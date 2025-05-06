@@ -16,8 +16,8 @@ import torch
 from ultralytics import YOLO
 
 # === 用户可修改区域 ===
-ORIG_YAML  = "senior-project-rod-4/data.yaml"  # data.yaml 路径
-MODEL_ARCH = "yolo11s.pt"                     # yolo11n.pt|yolo11s.pt|yolo11m.pt…
+ORIG_YAML  = "senior project-ROD.v4i.coco-segmentation/data.yaml"  # data.yaml 路径
+MODEL_ARCH = "yolo11s-seg.pt"                     # yolo11n.pt|yolo11s.pt|yolo11m.pt…
 EPOCHS     = 50
 IMGSZ      = 640
 BATCH_SIZE = 16
@@ -80,8 +80,10 @@ def main():
     print(f" output   : runs/{PROJECT}/{NAME}")
     print("================\n")
 
-    # 3. 执行训练
-    model = YOLO(MODEL_ARCH)
+    # 3. 載入 segmentation 預訓練權重
+    model = YOLO(MODEL_ARCH, task="segment")
+
+    # 4. 開始 training（微調）
     model.train(
         data     = abs_yaml,
         epochs   = EPOCHS,
@@ -91,9 +93,10 @@ def main():
         name     = NAME,
         device   = DEVICE,
         exist_ok = True,
-        verbose  = True,
+        task     = "segment",    # 這行最重要
         plots    = True
     )
+
 
     # 4. 输出最终权重位置
     best = os.path.join(

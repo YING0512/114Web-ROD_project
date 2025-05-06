@@ -14,7 +14,7 @@
          autoplay muted playsinline webkit-playsinline controls></video>
   <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
   <img id="output" width="320" height="240" />
-
+  <pre id="result" style="margin-top:10px; font-size:16px; color:#f00;"></pre>
   <script>
     const video = document.getElementById("video");
     const canvas = document.getElementById("canvas");
@@ -52,14 +52,13 @@
             body: JSON.stringify({ image: dataUrl })
           })
           .then(res => res.json())
-          .then(data => { output.src = data.image; })
+          .then(data => {
+            output.src = data.image;
+            document.getElementById("result").innerText = data.result;
+          })
           .catch(e => console.error("後端辨識錯誤：", e));
         }, 200);
       })
-      .catch(err => {
-        console.error("相機存取失敗：", err.name, err.message);
-        alert(`無法存取相機：${err.name}\n請確認已授權並且頁面為 HTTPS。`);
-      });
   </script>
 </body>
 </html>
