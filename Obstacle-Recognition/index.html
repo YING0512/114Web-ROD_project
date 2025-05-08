@@ -94,20 +94,11 @@
       marker.setAttribute('title', place.formatted_address || place.name || "搜尋結果");
     });
 
-    // 📷 拍照功能
-    // 當用戶點擊拍照按鈕時，觸發相機輸入框
+    // 📷 拍照按鈕 → 直接跳轉到影像辨識頁面
     document.getElementById('cameraBtn').addEventListener('click', () => {
-      document.getElementById('cameraInput').click();
+      window.location.href = 'detect.html';
     });
-
-    // 當用戶選擇照片後，處理照片
-    document.getElementById('cameraInput').addEventListener('change', (event) => {
-      const file = event.target.files[0];
-      if (file) {
-        alert('拍照成功！你可以處理這張圖片了。');
-        // 你可以在這裡加入圖片預覽或其他處理功能
-      }
-    });
+    
   </script>
 </body>
 </html>
