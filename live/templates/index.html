@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>街景辨識介面</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/@googlemaps/extended-component-library/0.6.11/index.min.js"></script>
+  <gmpx-api-loader
+    key="AIzaSyBz4QBMJeCoblbo3INVmtQqI7ejVOoMXRY"
+    solution-channel="GMP_website_v1"
+    libraries="places">
+  </gmpx-api-loader>
+</head>
+<body>
+  <div class="search-bar">
+    <gmpx-place-picker id="placePicker" placeholder="輸入地址或地點"></gmpx-place-picker>
+  </div>
+  <gmp-map
+    id="map"
+    center="23.022188,120.224205"
+    zoom="14"
+    map-id="DEMO_MAP_ID"
+    style="width:100%;height:100vh;">
+    <gmp-advanced-marker
+      id="mapMarker"
+      position="23.022188,120.224205"></gmp-advanced-marker>
+  </gmp-map>
+  <div class="control-panel">
+    <button class="icon-btn location" id="locateBtn">📍</button>
+    <button class="icon-btn camera" id="cameraBtn">📷</button>
+  </div>
+  <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;" />
+
+  <script src="{{ url_for('static', filename='js/index.js') }}"></script>
+</body>
+</html>

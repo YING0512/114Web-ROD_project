@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>即時辨識</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+  <h2>手機相機即時物件偵測</h2>
+  <video id="video" width="320" height="240" autoplay muted playsinline></video>
+  <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+  <img id="output" width="320" height="240" />
+  <pre id="result" style="margin-top:10px; font-size:16px; color:#f00;"></pre>
+
+  <script src="{{ url_for('static', filename='js/detect.js') }}"></script>
+</body>
+</html>
