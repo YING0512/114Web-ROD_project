@@ -1,5 +1,20 @@
 const map = document.getElementById('map');
 const marker = document.getElementById('mapMarker');
+const placePicker = document.getElementById('placePicker');
+
+placePicker.addEventListener('placechange', () => {
+  const place = placePicker.getPlace();
+  if (place && place.geometry && place.geometry.location) {
+    const lat = place.geometry.location.lat();
+    const lng = place.geometry.location.lng();
+    map.setAttribute('center', `${lat},${lng}`);
+    map.setAttribute('zoom', '15');
+    marker.setAttribute('position', `${lat},${lng}`);
+    marker.setAttribute('title', place.name || "選擇的位置");
+  } else {
+    alert('找不到該地點的座標。');
+  }
+});
 
 // 定位功能
 document.getElementById('locateBtn').addEventListener('click', () => {

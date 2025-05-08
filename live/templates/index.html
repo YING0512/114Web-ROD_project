@@ -13,9 +13,12 @@
   </gmpx-api-loader>
 </head>
 <body>
+  <!-- 搜尋欄 -->
   <div class="search-bar">
     <gmpx-place-picker id="placePicker" placeholder="輸入地址或地點"></gmpx-place-picker>
   </div>
+
+   <!-- 地圖顯示區域 -->
   <gmp-map
     id="map"
     center="23.022188,120.224205"
@@ -26,10 +29,17 @@
       id="mapMarker"
       position="23.022188,120.224205"></gmp-advanced-marker>
   </gmp-map>
+
+  <!-- 控制面板 -->
   <div class="control-panel">
     <button class="icon-btn location" id="locateBtn">📍</button>
+    <div class="divider"></div>
+    <button class="third-btn" id="navigateBtn">🧭</button>
+    <div class="divider"></div>
     <button class="icon-btn camera" id="cameraBtn">📷</button>
   </div>
+  
+   <!-- 相機輸入 -->
   <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;" />
 
   <script src="{{ url_for('static', filename='js/index.js') }}"></script>
