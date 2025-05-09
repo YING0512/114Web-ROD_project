@@ -2,20 +2,6 @@ const map = document.getElementById('map');
 const marker = document.getElementById('mapMarker');
 const placePicker = document.getElementById('placePicker');
 
-placePicker.addEventListener('placechange', () => {
-  const place = placePicker.getPlace();
-  if (place && place.geometry && place.geometry.location) {
-    const lat = place.geometry.location.lat();
-    const lng = place.geometry.location.lng();
-    map.setAttribute('center', `${lat},${lng}`);
-    map.setAttribute('zoom', '15');
-    marker.setAttribute('position', `${lat},${lng}`);
-    marker.setAttribute('title', place.name || "選擇的位置");
-  } else {
-    alert('找不到該地點的座標。');
-  }
-});
-
 // 定位功能
 document.getElementById('locateBtn').addEventListener('click', () => {
   if (!navigator.geolocation) {
@@ -34,19 +20,37 @@ document.getElementById('locateBtn').addEventListener('click', () => {
   );
 });
 
-// 地點搜尋
-document.getElementById('placePicker').addEventListener('gmpx-placechange', (e) => {
-  const place = e.detail;
-  if (!place.geometry) {
-    alert('找不到結果！');
+// 地點搜尋功能
+placePicker.addEventListener('gmpx-placechange', () => {
+  const place = placePicker.value;
+
+  if (!place || !place.id) {
+    alert('請重新輸入地址');
     return;
   }
-  const { lat, lng } = place.geometry.location;
-  map.setAttribute('center', `${lat},${lng}`);
-  map.setAttribute('zoom', '16');
-  marker.setAttribute('position', `${lat},${lng}`);
-  marker.setAttribute('title', place.formatted_address || place.name);
+
+  const service = new google.maps.places.PlacesService(document.createElement('div'));
+  service.getDetails(
+    {
+      placeId: place.id,
+      fields: ['name', 'formatted_address', 'geometry']
+    },
+    (result, status) => {
+      if (status === google.maps.places.PlacesServiceStatus.OK && result.geometry?.location) {
+        const lat = result.geometry.location.lat();
+        const lng = result.geometry.location.lng();
+
+        map.setAttribute('center', `${lat},${lng}`);
+        map.setAttribute('zoom', '16');
+        marker.setAttribute('position', `${lat},${lng}`);
+        marker.setAttribute('title', result.formatted_address || result.name || '選擇的位置');
+      } else {
+        alert('找不到該地點的座標。');
+      }
+    }
+  );
 });
+
 
 // 跳到辨識頁
 document.getElementById('cameraBtn').addEventListener('click', () => {

@@ -6,11 +6,11 @@
   <title>街景辨識介面</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
   <script type="module" src="https://ajax.googleapis.com/ajax/libs/@googlemaps/extended-component-library/0.6.11/index.min.js"></script>
-  <gmpx-api-loader
-    key="AIzaSyBz4QBMJeCoblbo3INVmtQqI7ejVOoMXRY"
-    solution-channel="GMP_website_v1"
-    libraries="places">
-  </gmpx-api-loader>
+  <script 
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBz4QBMJeCoblbo3INVmtQqI7ejVOoMXRY&libraries=places"
+  defer
+></script>
+
 </head>
 <body>
   <!-- 搜尋欄 -->
@@ -23,7 +23,7 @@
     id="map"
     center="23.022188,120.224205"
     zoom="14"
-    map-id="DEMO_MAP_ID"
+    map-id="23b40718a7b519e12b763605"
     style="width:100%;height:100vh;">
     <gmp-advanced-marker
       id="mapMarker"
