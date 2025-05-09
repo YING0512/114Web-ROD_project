@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>街景辨識介面</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
   <script type="module" src="https://ajax.googleapis.com/ajax/libs/@googlemaps/extended-component-library/0.6.11/index.min.js"></script>
@@ -31,12 +31,12 @@
   </gmp-map>
 
   <!-- 控制面板 -->
-  <div class="control-panel">
-    <button class="icon-btn location" id="locateBtn">📍</button>
+  <div class="split-buttons">
+    <button class="third-btn" id="locateBtn">📍</button>
     <div class="divider"></div>
     <button class="third-btn" id="navigateBtn">🧭</button>
     <div class="divider"></div>
-    <button class="icon-btn camera" id="cameraBtn">📷</button>
+    <button class="third-btn" id="cameraBtn">📷</button>
   </div>
   
    <!-- 相機輸入 -->
