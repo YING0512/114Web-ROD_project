@@ -1,58 +1,157 @@
-const map = document.getElementById('map');
-const marker = document.getElementById('mapMarker');
-const placePicker = document.getElementById('placePicker');
+// 初始化地圖，設定中心點與縮放層級
+const map = L.map('map').setView([22.999728, 120.227028], 13);  // 設定地圖初始中心為台南市
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+}).addTo(map);
+
+let userMarker = null;
+let destinationMarker = null; // 目標地點的 Marker 物件
+let routeLayer = null;
 
 // 定位功能
 document.getElementById('locateBtn').addEventListener('click', () => {
-  if (!navigator.geolocation) {
-    alert('你的瀏覽器不支援定位功能。');
-    return;
-  }
-  navigator.geolocation.getCurrentPosition(
-    pos => {
-      const { latitude: lat, longitude: lng } = pos.coords;
-      map.setAttribute('center', `${lat},${lng}`);
-      map.setAttribute('zoom', '15');
-      marker.setAttribute('position', `${lat},${lng}`);
-      marker.setAttribute('title', '你的位置');
-    },
-    () => alert('無法取得你的定位。')
-  );
-});
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition((position) => {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+      userLocation = [lat, lng];
 
-// 地點搜尋功能
-placePicker.addEventListener('gmpx-placechange', () => {
-  const place = placePicker.value;
-
-  if (!place || !place.id) {
-    alert('請重新輸入地址');
-    return;
-  }
-
-  const service = new google.maps.places.PlacesService(document.createElement('div'));
-  service.getDetails(
-    {
-      placeId: place.id,
-      fields: ['name', 'formatted_address', 'geometry']
-    },
-    (result, status) => {
-      if (status === google.maps.places.PlacesServiceStatus.OK && result.geometry?.location) {
-        const lat = result.geometry.location.lat();
-        const lng = result.geometry.location.lng();
-
-        map.setAttribute('center', `${lat},${lng}`);
-        map.setAttribute('zoom', '16');
-        marker.setAttribute('position', `${lat},${lng}`);
-        marker.setAttribute('title', result.formatted_address || result.name || '選擇的位置');
-      } else {
-        alert('找不到該地點的座標。');
+      // 每次定位前，先移除舊的 userMarker
+      if (userMarker) {
+        map.removeLayer(userMarker);
       }
-    }
-  );
+
+      // 加入新的 userMarker
+      userMarker = L.marker(userLocation).addTo(map)
+        .bindPopup("您的位置")
+        .openPopup();
+
+      // 將地圖移動到使用者位置，縮放層級 18 比較貼近
+      map.setView(userLocation, 18);
+    }, (error) => {
+      alert('定位失敗');
+    });
+  } else {
+    alert('瀏覽器不支援定位功能');
+  }
 });
 
+// 搜尋功能：輸入時即顯示地點建議清單（即時搜尋）
+const searchInput = document.getElementById('searchInput');
+const resultsContainer = document.getElementById('searchResults');
 
-// 跳到辨識頁
+let debounceTimer = null;
+
+searchInput.addEventListener('input', () => {
+  const query = searchInput.value;
+  if (!query.trim()) {
+    resultsContainer.innerHTML = '';
+    return;
+  }
+
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`)
+      .then(response => response.json())
+      .then(data => {
+        resultsContainer.innerHTML = '';
+
+        if (data.length === 0) {
+          const li = document.createElement('li');
+          li.textContent = '找不到地點';
+          resultsContainer.appendChild(li);
+          return;
+        }
+
+        data.slice(0, 5).forEach(place => {
+          const li = document.createElement('li');
+          li.textContent = place.display_name;
+          li.style.cursor = 'pointer';
+          li.addEventListener('click', () => {
+            const lat = parseFloat(place.lat);
+            const lon = parseFloat(place.lon);
+
+            // 移除舊的目標地點 Marker
+            if (destinationMarker) {
+              map.removeLayer(destinationMarker);
+            }
+
+            destinationMarker = L.marker([lat, lon]).addTo(map)
+              .bindPopup(place.display_name)
+              .openPopup();
+
+            map.setView([lat, lon], 15);
+
+            resultsContainer.innerHTML = '';
+            searchInput.value = '';
+
+            alert("已選擇目的地，如需導航請再次點擊導航按鈕");
+          });
+          resultsContainer.appendChild(li);
+        });
+      })
+      .catch(() => {
+        resultsContainer.innerHTML = '<li>搜尋錯誤</li>';
+      });
+  }, 300);
+});
+
+// 相機按鈕事件
 document.getElementById('cameraBtn').addEventListener('click', () => {
   window.location.href = '/detect';
+});
+
+// 導航按鈕事件
+document.getElementById('navigateBtn').addEventListener('click', () => {
+  if (!userLocation) {
+    alert("請先啟用定位功能");
+    return;
+  }
+
+  if (!destinationMarker) {
+    alert("請先搜尋並點選目的地");
+    return;
+  }
+
+  // 若已存在導航路線，代表是第二次點擊，此時移除路線與目標 marker 並退出
+  if (routeLayer) {
+    map.removeLayer(routeLayer);
+    routeLayer = null;
+
+    if (destinationMarker) {
+      map.removeLayer(destinationMarker);
+      destinationMarker = null;
+    }
+
+    alert("已取消導航路線與目標地點");
+    return;
+  }
+
+  // 第一次點擊：規劃導航路線
+  const destLatLng = destinationMarker.getLatLng();
+  const url = `https://router.project-osrm.org/route/v1/driving/${userLocation[1]},${userLocation[0]};${destLatLng.lng},${destLatLng.lat}?overview=full&geometries=geojson`;
+
+  fetch(url)
+    .then(res => res.json())
+    .then(data => {
+      if (data.routes.length === 0) {
+        alert("找不到路線");
+        return;
+      }
+
+      const route = data.routes[0].geometry;
+
+      routeLayer = L.geoJSON(route, {
+        style: {
+          color: 'blue',
+          weight: 5
+        }
+      }).addTo(map);
+
+      map.fitBounds(L.geoJSON(route).getBounds());
+    })
+    .catch(() => {
+      alert("路線規劃錯誤");
+    });
 });
