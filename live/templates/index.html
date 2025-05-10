@@ -4,32 +4,17 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>街景辨識介面</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
-  <script type="module" src="https://ajax.googleapis.com/ajax/libs/@googlemaps/extended-component-library/0.6.11/index.min.js"></script>
-  <script 
-  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBz4QBMJeCoblbo3INVmtQqI7ejVOoMXRY&libraries=places"
-  defer
-></script>
-
+  <script src="{{ url_for('static', filename='leaflet/leaflet.js') }}"></script>
 </head>
 <body>
-  <!-- 搜尋欄 -->
   <div class="search-bar">
-    <gmpx-place-picker id="placePicker" placeholder="輸入地址或地點"></gmpx-place-picker>
+    <input type="text" id="searchInput" placeholder="搜尋地點…" />
+    <button id="searchBtn">🔍</button>
   </div>
-
-   <!-- 地圖顯示區域 -->
-  <gmp-map
-    id="map"
-    center="23.022188,120.224205"
-    zoom="14"
-    map-id="23b40718a7b519e12b763605"
-    style="width:100%;height:100vh;">
-    <gmp-advanced-marker
-      id="mapMarker"
-      position="23.022188,120.224205"></gmp-advanced-marker>
-  </gmp-map>
-
+  <ul id="searchResults" class="search-results"></ul>
+  <div id="map"></div>
   <!-- 控制面板 -->
   <div class="split-buttons">
     <button class="third-btn" id="locateBtn">📍</button>
