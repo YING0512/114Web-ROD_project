@@ -1,27 +1,17 @@
 <!doctype html>
 <html lang="zh-TW">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>即時辨識</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous"></script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
 </head>
 <body>
-  <header class="header">
-    <h1>即時辨識</h1>
-    <button id="speechToggle" class="speech-btn on" title="語音：開">
-      <i id="speechIcon" class="fa-solid fa-volume-high"></i>
-      <span id="speechLabel">開</span>
-    </button>
-  </header>
-
-  <div class="camera-container">
-    <video id="video" autoplay muted playsinline></video>
-    <canvas id="overlay"></canvas>
-  </div>
-
-  <div id="result" class="result-box"></div>
+  <h2>手機相機即時物件偵測</h2>
+  <video id="video" width="320" height="240" autoplay muted playsinline></video>
+  <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+  <img id="output" width="320" height="240" />
+  <pre id="result" style="margin-top:10px; font-size:16px; color:#f00;"></pre>
 
   <script src="{{ url_for('static', filename='js/detect.js') }}"></script>
 </body>
