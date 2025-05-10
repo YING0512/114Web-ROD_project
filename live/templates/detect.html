@@ -4,6 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <title>即時辨識</title>
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='leaflet/leaflet.css') }}" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
@@ -12,7 +14,6 @@
     <h1>即時辨識</h1>
     <button id="speechToggle" class="speech-btn on" title="語音：開">
       <i id="speechIcon" class="fa-solid fa-volume-high"></i>
-      <span id="speechLabel">開</span>
     </button>
   </header>
 
@@ -21,8 +22,23 @@
     <canvas id="overlay"></canvas>
   </div>
 
-  <div id="result" class="result-box"></div>
+  <div class="result-box">
+    <div class="result-label">路況</div>
+    <div id="result" class="result-content">--</div>
+  </div>
 
+  <div class="output-container">
+    <button id="backBtn" class="back-btn">
+      <i class="fa-solid fa-map-location-dot"></i> 返回地圖
+    </button>
+    <div class="reserved-area">
+      <!-- 3:2 區域放置地圖 -->
+      <div id="miniMap" class="mini-map"></div>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="{{ url_for('static', filename='leaflet/leaflet.js') }}"></script>
   <script src="{{ url_for('static', filename='js/detect.js') }}"></script>
 </body>
 </html>

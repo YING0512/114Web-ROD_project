@@ -1,12 +1,12 @@
 const video       = document.getElementById('video');
 const overlay     = document.getElementById('overlay');
 const ctx         = overlay.getContext('2d');
-const resultBox   = document.getElementById('result');
+const resultEl    = document.getElementById('result');
 const speechBtn   = document.getElementById('speechToggle');
 const speechIcon  = document.getElementById('speechIcon');
-const speechLabel = document.getElementById('speechLabel');
+const backBtn     = document.getElementById('backBtn');
 
-// 語音控制
+
 let speechEnabled    = true;
 const SPEECH_COOLDOWN = 5000;
 const FRAME_THRESHOLD = 3;
@@ -19,40 +19,46 @@ speechBtn.addEventListener('click', toggleSpeech);
 function toggleSpeech() {
   speechEnabled = !speechEnabled;
   if (speechEnabled) {
-    speechIcon.className   = 'fa-solid fa-volume-high';
-    speechLabel.innerText  = ' 開';
+    speechIcon.className = 'fa-solid fa-volume-high';
     speechBtn.classList.add('on');
     speechBtn.classList.remove('off');
-    speechBtn.title        = '語音：開';
+    speechBtn.title = '語音：開';
   } else {
-    speechIcon.className   = 'fa-solid fa-volume-xmark';
-    speechLabel.innerText  = ' 關';
+    speechIcon.className = 'fa-solid fa-volume-xmark';
     speechBtn.classList.add('off');
     speechBtn.classList.remove('on');
-    speechBtn.title        = '語音：關';
+    speechBtn.title = '語音：關';
   }
 }
 
 // 三連點切換語音
-let clicks = 0, timer;
+let clicks = 0, clickTimer;
 document.body.addEventListener('click', () => {
   clicks++;
   if (clicks === 1) {
-    timer = setTimeout(() => clicks = 0, 600);
+    clickTimer = setTimeout(() => { clicks = 0; }, 600);
   } else if (clicks === 3) {
-    clearTimeout(timer);
+    clearTimeout(clickTimer);
     clicks = 0;
     toggleSpeech();
   }
 });
 
-// 畫面上只塗物件框內區域
-function drawBoxes(boxes) {
+backBtn.addEventListener('click', () => {
+  window.location.href = '/';
+});
+
+// 在畫面上只塗物件範圍內的多邊形遮罩
+function drawMasks(masks) {
   ctx.clearRect(0, 0, overlay.width, overlay.height);
-  ctx.fillStyle = 'rgba(255,0,0,0.3)';
-  boxes.forEach(b => {
-    const [x1, y1, x2, y2] = b;
-    ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
+  ctx.fillStyle = 'rgba(0,255,0,0.3)';
+  masks.forEach(poly => {
+    ctx.beginPath();
+    poly.forEach(([x, y], i) => {
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.closePath();
+    ctx.fill();
   });
 }
 
@@ -66,36 +72,34 @@ function speak(text) {
   speechSynthesis.speak(u);
 }
 
-// 處理語音與幀門檻
+// 幀門檻與語音重複過濾
 function handleSpeech(resultText) {
   if (resultText === lastMovement) return;
   movementCounter++;
   if (movementCounter >= FRAME_THRESHOLD) {
     speak(resultText);
-    lastMovement = resultText;
+    lastMovement    = resultText;
     movementCounter = 0;
   }
 }
 
-// 啟用相機並定期送檢
+// 啟用相機並定期送圖檢測
 navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
   .then(stream => {
     video.srcObject = stream;
     return new Promise(r => video.onloadedmetadata = r);
   })
   .then(() => {
-    // 同步 canvas 尺寸
+    // 同步 overlay 大小
     overlay.width  = video.videoWidth;
     overlay.height = video.videoHeight;
-    // 設定相機容器高度
     const cam = document.querySelector('.camera-container');
     cam.style.height = `${video.videoHeight * (cam.clientWidth / video.videoWidth)}px`;
     cam.classList.add('fixed');
 
     setInterval(async () => {
-      // 擷取畫面
       const tmp = document.createElement('canvas');
-      tmp.width = overlay.width;
+      tmp.width  = overlay.width;
       tmp.height = overlay.height;
       tmp.getContext('2d').drawImage(video, 0, 0);
 
@@ -105,12 +109,23 @@ navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image: dataUrl })
       });
-      const { boxes, result } = await res.json();
+      const { masks, result } = await res.json();
 
-      // 更新畫面與文字
-      drawBoxes(boxes);
-      resultBox.innerText = result;
+      if (masks && masks.length) {
+        drawMasks(masks);
+      }
+      resultEl.innerText = result;
       handleSpeech(result);
     }, 200);
   })
   .catch(e => console.error('無法啟用相機：', e));
+
+// --- Mini Map 初始化（不變） ---
+const miniMap = L.map('miniMap', {
+  attributionControl: false,
+  zoomControl: false
+}).setView([22.999728, 120.227028], 13);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19
+}).addTo(miniMap);
