@@ -207,6 +207,77 @@ searchInput.addEventListener('input', () => {
                     }
                   }).addTo(map);
 
+                  map.fitBounds(L.geoJSON(route).getBounds());
+                })
+                .catch(() => {
+                  alert("路線規劃錯誤");
+                });
+            } else {
+              alert("已選擇目的地，如需重新導航請重新搜尋");
+            }
+          });
+
+          resultsContainer.appendChild(li);
+        });
+      })
+      .catch(() => {
+        resultsContainer.innerHTML = '<li>搜尋錯誤</li>';
+      });
+  }, 300);
+});
+
+// 相機按鈕事件
+document.getElementById('cameraBtn').addEventListener('click', () => {
+  window.location.href = '/detect';
+});
+
+// 導航按鈕事件
+document.getElementById('navigateBtn').addEventListener('click', () => {
+  if (!userLocation) {
+    alert("請先啟用定位功能");
+    return;
+  }
+
+  if (!destinationMarker) {
+    alert("請先搜尋並點選目的地");
+    return;
+  }
+
+  // 若已存在導航路線，代表是第二次點擊，此時移除路線與目標 marker 並退出
+  if (routeLayer) {
+    map.removeLayer(routeLayer);
+    routeLayer = null;
+
+    if (destinationMarker) {
+      map.removeLayer(destinationMarker);
+      destinationMarker = null;
+    }
+
+    alert("已取消導航路線與目標地點");
+    return;
+  }
+
+  // 第一次點擊：規劃導航路線
+  const destLatLng = destinationMarker.getLatLng();
+  const url = `https://router.project-osrm.org/route/v1/driving/${userLocation[1]},${userLocation[0]};${destLatLng.lng},${destLatLng.lat}?overview=full&geometries=geojson`;
+
+  fetch(url)
+    .then(res => res.json())
+    .then(data => {
+      if (data.routes.length === 0) {
+        alert("找不到路線");
+        return;
+      }
+
+      const route = data.routes[0].geometry;
+
+      routeLayer = L.geoJSON(route, {
+        style: {
+          color: 'blue',
+          weight: 5
+        }
+      }).addTo(map);
+
       map.fitBounds(L.geoJSON(route).getBounds());
     })
     .catch(() => {
