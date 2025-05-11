@@ -8,6 +8,46 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 let userMarker = null;
 let destinationMarker = null; // 目標地點的 Marker 物件
 let routeLayer = null;
+let userLocation = null; // 使用者目前位置的經緯度
+
+// **還原先前地圖狀態（若有）**
+window.addEventListener('load', () => {
+  const saved = sessionStorage.getItem('mapState');
+  if (saved) {
+    const state = JSON.parse(saved);
+    // 還原地圖視角
+    map.setView([state.center.lat, state.center.lng], state.zoom);
+
+    // 還原定位
+    if (state.userLocation) {
+      userLocation = [state.userLocation.lat, state.userLocation.lng];
+      if (userMarker) map.removeLayer(userMarker);
+      userMarker = L.marker(userLocation).addTo(map)
+        .bindPopup("您的位置")
+        .openPopup();
+    }
+
+    // 還原目的地
+    if (state.destination) {
+      const d = state.destination;
+      if (destinationMarker) map.removeLayer(destinationMarker);
+      destinationMarker = L.marker([d.lat, d.lng]).addTo(map)
+        .bindPopup(d.name || "目的地")
+        .openPopup();
+    }
+
+    // 還原導航路線
+    if (state.routeGeoJSON) {
+      routeLayer = L.geoJSON(state.routeGeoJSON, {
+        style: { color: 'blue', weight: 5 }
+      }).addTo(map);
+      map.fitBounds(L.geoJSON(state.routeGeoJSON).getBounds());
+    }
+
+    // 清除暫存
+    sessionStorage.removeItem('mapState');
+  }
+});
 
 // 定位功能
 document.getElementById('locateBtn').addEventListener('click', () => {
@@ -154,4 +194,22 @@ document.getElementById('navigateBtn').addEventListener('click', () => {
     .catch(() => {
       alert("路線規劃錯誤");
     });
+});
+
+// **切換到影像辨識前，先儲存目前地圖狀態到 sessionStorage**
+document.getElementById('cameraBtn').addEventListener('click', () => {
+  const center = map.getCenter();
+  const state = {
+    center: { lat: center.lat, lng: center.lng },
+    zoom: map.getZoom(),
+    userLocation: userLocation ? { lat: userLocation[0], lng: userLocation[1] } : null,
+    destination: destinationMarker ? {
+      lat: destinationMarker.getLatLng().lat,
+      lng: destinationMarker.getLatLng().lng,
+      name: destinationMarker.getPopup().getContent()
+    } : null,
+    routeGeoJSON: routeLayer ? routeLayer.toGeoJSON() : null
+  };
+  sessionStorage.setItem('mapState', JSON.stringify(state));
+  window.location.href = '/detect';
 });

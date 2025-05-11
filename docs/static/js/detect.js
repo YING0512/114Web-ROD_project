@@ -116,16 +116,34 @@ navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
       }
       resultEl.innerText = result;
       handleSpeech(result);
-    }, 200);
+    }, 1000);
   })
   .catch(e => console.error('無法啟用相機：', e));
 
-// --- Mini Map 初始化（不變） ---
+// --- Mini Map 初始化（修改前的初始值改為暫存後的狀態） ---
 const miniMap = L.map('miniMap', {
   attributionControl: false,
   zoomControl: false
-}).setView([22.999728, 120.227028], 13);
+});
+
+// 嘗試從 sessionStorage 還原
+const saved = sessionStorage.getItem('mapState');
+if (saved) {
+  const state = JSON.parse(saved);
+  if (state.center && state.zoom) {
+    miniMap.setView([state.center.lat, state.center.lng], state.zoom);
+  } else {
+    miniMap.setView([22.999728, 120.227028], 13);
+  }
+} else {
+  miniMap.setView([22.999728, 120.227028], 13);
+}
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19
 }).addTo(miniMap);
+
+// **返回地圖：只要導回首頁，index.js 就會自動還原先前地圖狀態**
+backBtn.addEventListener('click', () => {
+  window.location.href = '/';
+});

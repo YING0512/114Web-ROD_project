@@ -233,20 +233,34 @@ body, html {
 .back-btn {
   flex: 1;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;      /* 垂直排列 */
+  align-items: center;         /* 水平置中 */
+  justify-content: center;     /* 垂直置中 */
   height: 100%;
-  font-size: 16px;
   background: #fff;
   border: 1px solid #ccc;
   border-radius: 4px;
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-.back-btn i {
-  margin-right: 6px;
+  text-align: center;          /* 文字置中 */
 }
 
+/* Icon 大小佔按鈕約 1/2 */
+.back-btn i {
+  display: block;              /* 讓寬高設定生效 */
+  width: 50%;                  /* icon 寬度為按鈕寬度的一半 */
+  max-width: 80px;             /* 最多不要超過 80px */
+  height: auto;
+  font-size: 1em;              /* 確保 icon 按比例縮放 */
+}
+
+
+/* 文字在 icon 下方 */
+.back-btn .btn-text {
+  margin-top: 8px;
+  font-size: 16px;
+  line-height: 1;
+}
 /* 地圖縮影區：佔 2/3 寬度，高度填滿父容器 */
 .reserved-area {
   flex: 2;

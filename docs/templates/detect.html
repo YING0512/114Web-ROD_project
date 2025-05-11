@@ -10,7 +10,8 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-  <header class="header">
+  <div class="app-container">
+    <header class="header">
     <h1>即時辨識</h1>
     <button id="speechToggle" class="speech-btn on" title="語音：開">
       <i id="speechIcon" class="fa-solid fa-volume-high"></i>
@@ -18,25 +19,26 @@
   </header>
 
   <div class="camera-container">
-    <video id="video" autoplay muted playsinline></video>
+    <video id="video" autoplay muted></video>
     <canvas id="overlay"></canvas>
   </div>
 
   <div class="result-box">
-    <div class="result-label">路況</div>
-    <div id="result" class="result-content">--</div>
+    <div class="result-label">辨識結果：</div>
+    <div id="result" class="result-content"></div>
   </div>
 
   <div class="output-container">
+    <!-- 返回地圖按鈕：icon 在上，文字在下，置中，icon 大小佔按鈕 1/2 -->
     <button id="backBtn" class="back-btn">
-      <i class="fa-solid fa-map-location-dot"></i> 返回地圖
+      <i class="fa-solid fa-map-location-dot"></i>
+      <span class="btn-text">返回地圖</span>
     </button>
     <div class="reserved-area">
-      <!-- 3:2 區域放置地圖 -->
       <div id="miniMap" class="mini-map"></div>
     </div>
   </div>
-
+  
   <!-- Leaflet JS -->
   <script src="{{ url_for('static', filename='leaflet/leaflet.js') }}"></script>
   <script src="{{ url_for('static', filename='js/detect.js') }}"></script>
