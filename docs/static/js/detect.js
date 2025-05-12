@@ -1,149 +1,238 @@
-const video       = document.getElementById('video');
-const overlay     = document.getElementById('overlay');
-const ctx         = overlay.getContext('2d');
-const resultEl    = document.getElementById('result');
-const speechBtn   = document.getElementById('speechToggle');
-const speechIcon  = document.getElementById('speechIcon');
-const backBtn     = document.getElementById('backBtn');
-
-
-let speechEnabled    = true;
-const SPEECH_COOLDOWN = 5000;
-const FRAME_THRESHOLD = 3;
-let lastSpeechTime   = 0;
-let movementCounter  = 0;
-let lastMovement     = "";
-
-// 切換語音
-speechBtn.addEventListener('click', toggleSpeech);
-function toggleSpeech() {
-  speechEnabled = !speechEnabled;
-  if (speechEnabled) {
-    speechIcon.className = 'fa-solid fa-volume-high';
-    speechBtn.classList.add('on');
-    speechBtn.classList.remove('off');
-    speechBtn.title = '語音：開';
-  } else {
-    speechIcon.className = 'fa-solid fa-volume-xmark';
-    speechBtn.classList.add('off');
-    speechBtn.classList.remove('on');
-    speechBtn.title = '語音：關';
-  }
-}
-
-// 三連點切換語音
-let clicks = 0, clickTimer;
-document.body.addEventListener('click', () => {
-  clicks++;
-  if (clicks === 1) {
-    clickTimer = setTimeout(() => { clicks = 0; }, 600);
-  } else if (clicks === 3) {
-    clearTimeout(clickTimer);
-    clicks = 0;
-    toggleSpeech();
-  }
-});
-
-backBtn.addEventListener('click', () => {
-  window.location.href = '/';
-});
-
-// 在畫面上只塗物件範圍內的多邊形遮罩
-function drawMasks(masks) {
-  ctx.clearRect(0, 0, overlay.width, overlay.height);
-  ctx.fillStyle = 'rgba(0,255,0,0.3)';
-  masks.forEach(poly => {
-    ctx.beginPath();
-    poly.forEach(([x, y], i) => {
-      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-    });
-    ctx.closePath();
-    ctx.fill();
-  });
-}
-
-// 播報語音
-function speak(text) {
-  const now = Date.now();
-  if (!speechEnabled || now - lastSpeechTime < SPEECH_COOLDOWN) return;
-  lastSpeechTime = now;
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'zh-TW';
-  speechSynthesis.speak(u);
-}
-
-// 幀門檻與語音重複過濾
-function handleSpeech(resultText) {
-  if (resultText === lastMovement) return;
-  movementCounter++;
-  if (movementCounter >= FRAME_THRESHOLD) {
-    speak(resultText);
-    lastMovement    = resultText;
-    movementCounter = 0;
-  }
-}
-
-// 啟用相機並定期送圖檢測
-navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-  .then(stream => {
-    video.srcObject = stream;
-    return new Promise(r => video.onloadedmetadata = r);
-  })
-  .then(() => {
-    // 同步 overlay 大小
-    overlay.width  = video.videoWidth;
-    overlay.height = video.videoHeight;
-    const cam = document.querySelector('.camera-container');
-    cam.style.height = `${video.videoHeight * (cam.clientWidth / video.videoWidth)}px`;
-    cam.classList.add('fixed');
-
-    setInterval(async () => {
-      const tmp = document.createElement('canvas');
-      tmp.width  = overlay.width;
-      tmp.height = overlay.height;
-      tmp.getContext('2d').drawImage(video, 0, 0);
-
-      const dataUrl = tmp.toDataURL('image/jpeg');
-      const res = await fetch('/detect', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: dataUrl })
-      });
-      const { masks, result } = await res.json();
-
-      if (masks && masks.length) {
-        drawMasks(masks);
-      }
-      resultEl.innerText = result;
-      handleSpeech(result);
-    }, 1000);
-  })
-  .catch(e => console.error('無法啟用相機：', e));
-
-// --- Mini Map 初始化（修改前的初始值改為暫存後的狀態） ---
-const miniMap = L.map('miniMap', {
-  attributionControl: false,
-  zoomControl: false
-});
-
-// 嘗試從 sessionStorage 還原
-const saved = sessionStorage.getItem('mapState');
-if (saved) {
-  const state = JSON.parse(saved);
-  if (state.center && state.zoom) {
-    miniMap.setView([state.center.lat, state.center.lng], state.zoom);
-  } else {
-    miniMap.setView([22.999728, 120.227028], 13);
-  }
-} else {
-  miniMap.setView([22.999728, 120.227028], 13);
-}
+// 初始化地圖
+const map = L.map('map').setView([22.999728, 120.227028], 13);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 19
-}).addTo(miniMap);
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+}).addTo(map);
 
-// **返回地圖：只要導回首頁，index.js 就會自動還原先前地圖狀態**
-backBtn.addEventListener('click', () => {
-  window.location.href = '/';
+let userMarker = null;
+let destinationMarker = null;
+let routeLayer = null;
+let userLocation = null; // 使用者目前位置的經緯度
+
+// **還原先前地圖狀態（若有）**
+window.addEventListener('load', () => {
+  const saved = sessionStorage.getItem('mapState');
+  if (saved) {
+    const state = JSON.parse(saved);
+    // 還原地圖視角
+    map.setView([state.center.lat, state.center.lng], state.zoom);
+
+    // 還原定位
+    if (state.userLocation) {
+      userLocation = [state.userLocation.lat, state.userLocation.lng];
+      if (userMarker) map.removeLayer(userMarker);
+      userMarker = L.marker(userLocation).addTo(map)
+        .bindPopup("您的位置")
+        .openPopup();
+    }
+
+    // 還原目的地
+    if (state.destination) {
+      const d = state.destination;
+      if (destinationMarker) map.removeLayer(destinationMarker);
+      destinationMarker = L.marker([d.lat, d.lng]).addTo(map)
+        .bindPopup(d.name || "目的地")
+        .openPopup();
+    }
+
+    // 還原導航路線
+    if (state.routeGeoJSON) {
+      routeLayer = L.geoJSON(state.routeGeoJSON, {
+        style: { color: 'blue', weight: 5 }
+      }).addTo(map);
+      map.fitBounds(L.geoJSON(state.routeGeoJSON).getBounds());
+    }
+
+    // 清除暫存
+    sessionStorage.removeItem('mapState');
+  }
+});
+
+// 初次載入即定位
+if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition((position) => {
+    const lat = position.coords.latitude;
+    const lng = position.coords.longitude;
+    userLocation = [lat, lng];
+
+    if (userMarker) {
+      map.removeLayer(userMarker);
+    }
+
+    userMarker = L.marker(userLocation).addTo(map)
+      .bindPopup("您的位置")
+      .openPopup();
+
+    map.setView(userLocation, 18);
+  }, () => {
+    alert('自動定位失敗，請手動點擊定位按鈕');
+  });
+} else {
+  alert('瀏覽器不支援定位功能');
+}
+
+// 定位按鈕
+document.getElementById('locateBtn').addEventListener('click', () => {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition((position) => {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+      userLocation = [lat, lng];
+
+      if (userMarker) {
+        map.removeLayer(userMarker);
+      }
+
+      userMarker = L.marker(userLocation).addTo(map)
+        .bindPopup("您的位置")
+        .openPopup();
+
+      map.setView(userLocation, 18);
+    }, () => {
+      alert('定位失敗');
+    });
+  } else {
+    alert('瀏覽器不支援定位功能');
+  }
+});
+
+// 搜尋功能
+const searchInput = document.getElementById('searchInput');
+const resultsContainer = document.getElementById('searchResults');
+
+let debounceTimer = null;
+
+searchInput.addEventListener('input', () => {
+  const query = searchInput.value;
+  if (!query.trim()) {
+    resultsContainer.innerHTML = '';
+    return;
+  }
+
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`)
+      .then(response => response.json())
+      .then(data => {
+        resultsContainer.innerHTML = '';
+
+        if (data.length === 0) {
+          const li = document.createElement('li');
+          li.textContent = '找不到地點';
+          resultsContainer.appendChild(li);
+          return;
+        }
+
+        data.slice(0, 5).forEach(place => {
+          const li = document.createElement('li');
+          li.textContent = place.display_name;
+          li.style.cursor = 'pointer';
+
+          li.addEventListener('click', () => {
+            const lat = parseFloat(place.lat);
+            const lon = parseFloat(place.lon);
+          
+            if (destinationMarker) {
+              map.removeLayer(destinationMarker);
+            }
+          
+            destinationMarker = L.marker([lat, lon]).addTo(map)
+              .bindPopup(place.display_name)
+              .openPopup();
+          
+            map.setView([lat, lon], 15);
+          
+            // 清空舊結果與按鈕
+            resultsContainer.innerHTML = '';
+            searchInput.value = '';
+                      
+            const confirmNav = confirm("已選擇目的地，是否立即導航？");
+          
+            if (confirmNav) {
+              if (!userLocation) {
+                alert("請先啟用定位功能");
+                return;
+              }
+          
+              const url = `https://router.project-osrm.org/route/v1/driving/${userLocation[1]},${userLocation[0]};${lon},${lat}?overview=full&geometries=geojson`;
+          
+              fetch(url)
+                .then(res => res.json())
+                .then(data => {
+                  if (data.routes.length === 0) {
+                    alert("找不到路線");
+                    return;
+                  }
+          
+                  const route = data.routes[0].geometry;
+          
+                  if (routeLayer) {
+                    map.removeLayer(routeLayer);
+                  }
+          
+                  routeLayer = L.geoJSON(route, {
+                    style: {
+                      color: 'blue',
+                      weight: 5
+                    }
+                  }).addTo(map);
+          
+                  map.fitBounds(L.geoJSON(route).getBounds());
+          
+                  // 插入取消導航按鈕
+                  const cancelLi = document.createElement('li');
+                  const cancelBtn = document.createElement('button');
+                  cancelBtn.className = 'cancelRouteBtn';
+                  cancelBtn.textContent = '取消導航';
+          
+                  cancelBtn.addEventListener('click', () => {
+                    if (routeLayer) {
+                      map.removeLayer(routeLayer);
+                      routeLayer = null;
+                    }
+                    if (destinationMarker) {
+                      map.removeLayer(destinationMarker);
+                      destinationMarker = null;
+                    }
+                    resultsContainer.innerHTML = ''; // 清空搜尋結果和按鈕
+                    resultsContainer.style.display = 'none';
+                  });
+          
+                  cancelLi.appendChild(cancelBtn);
+                  resultsContainer.appendChild(cancelLi);
+                })
+                .catch(() => {
+                  alert("路線規劃錯誤");
+                });
+            } else {
+              alert("已選擇目的地，如需重新導航請重新搜尋");
+            }
+          });
+          
+          resultsContainer.appendChild(li);
+        });
+      })
+      .catch(() => {
+        resultsContainer.innerHTML = '<li>搜尋錯誤</li>';
+      });
+  }, 300);
+});
+
+// **切換到影像辨識前，先儲存目前地圖狀態到 sessionStorage**
+document.getElementById('cameraBtn').addEventListener('click', () => {
+  const center = map.getCenter();
+  const state = {
+    center: { lat: center.lat, lng: center.lng },
+    zoom: map.getZoom(),
+    userLocation: userLocation ? { lat: userLocation[0], lng: userLocation[1] } : null,
+    destination: destinationMarker ? {
+      lat: destinationMarker.getLatLng().lat,
+      lng: destinationMarker.getLatLng().lng,
+      name: destinationMarker.getPopup().getContent()
+    } : null,
+    routeGeoJSON: routeLayer ? routeLayer.toGeoJSON() : null
+  };
+  sessionStorage.setItem('mapState', JSON.stringify(state));
+  window.location.href = '/detect';
 });
