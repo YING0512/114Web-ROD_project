@@ -24,7 +24,7 @@
 }
 /* 語音按鈕：開關狀態變化 */
 .speech-btn {
-  height: 90%;
+  height: 40px;
   width: 60px;
   border: 1px solid #00000088;
   border-radius: 4px;
@@ -41,7 +41,7 @@
 /* ========== Detect Page: 語音控制區 ========== */
 /* 語音控制區：顯示語音開關按鈕與資訊按鈕 */
 .speech-controls {
-  height: 90%;
+  height: 40px;
   width: 60px;
   display: flex;
   align-items: center;
@@ -51,7 +51,7 @@
 
 /* 資訊按鈕：顯示操作說明 */
 .speech-info-btn {
-  height: 100%;
+  height: 30px;
   width: 30px;
   background: none;
   border: none;
