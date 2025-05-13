@@ -1,21 +1,22 @@
-const video       = document.getElementById('video');
-const overlay     = document.getElementById('overlay');
-const ctx         = overlay.getContext('2d');
-const resultEl    = document.getElementById('result');
-const speechBtn   = document.getElementById('speechToggle');
-const speechIcon  = document.getElementById('speechIcon');
-const backBtn     = document.getElementById('backBtn');
-const speechInfoBtn = document.getElementById('speechInfo');
-const notice = document.getElementById('speechNotice');
+// ===== 初始 DOM 取得 =====
+const video        = document.getElementById('video');
+const overlay      = document.getElementById('overlay');
+const ctx          = overlay.getContext('2d');
+const resultEl     = document.getElementById('result');
+const speechBtn    = document.getElementById('speechToggle');
+const speechIcon   = document.getElementById('speechIcon');
+const backBtn      = document.getElementById('backBtn');
+const speechInfoBtn= document.getElementById('speechInfo');
+const notice       = document.getElementById('speechNotice');
 
-let speechEnabled    = true;
-const SPEECH_COOLDOWN = 5000;
-const FRAME_THRESHOLD = 3;
-let lastSpeechTime   = 0;
-let movementCounter  = 0;
-let lastMovement     = "";
+let speechEnabled   = true;            // 語音預設開啟
+const SPEECH_COOLDOWN = 5000;          // 語音最短間隔
+const FRAME_THRESHOLD = 3;             // 辨識結果語音連續幀門檻
+let lastSpeechTime  = 0;
+let movementCounter = 0;
+let lastMovement    = "";
 
-// 切換語音
+// ===== 切換語音開關 =====
 speechBtn.addEventListener('click', toggleSpeech);
 function toggleSpeech() {
   speechEnabled = !speechEnabled;
@@ -32,7 +33,7 @@ function toggleSpeech() {
   }
 }
 
-// 三連點切換語音
+// ===== 連點三下切換語音（方便單手操作） =====
 let clicks = 0, clickTimer;
 document.body.addEventListener('click', () => {
   clicks++;
@@ -45,28 +46,26 @@ document.body.addEventListener('click', () => {
   }
 });
 
-// 進入偵測頁面時提示語音開啟
-if (speechEnabled) {
-  speak("語音播報開啟中...");
-}
-// 取得「i」資訊按鈕，點擊跳出操作說明
-speechInfoBtn.addEventListener('click', () => {
-  alert('連續點擊畫面三下可切換語音開關');
-});
-
-// 進入偵測頁面時顯示文字提示，3 秒後自動隱藏
+// ===== 進入頁面時提示「語音開啟中…」 =====
 window.addEventListener('DOMContentLoaded', () => {
   if (speechEnabled) {
     notice.style.display = 'block';
     setTimeout(() => { notice.style.display = 'none'; }, 3000);
+    speak("語音播報開啟中...");
   }
 });
-// 返回主地圖：回到首頁，index.js 會還原先前地圖狀態
+
+// 資訊按鈕：顯示操作說明
+speechInfoBtn.addEventListener('click', () => {
+  alert('連續點擊畫面三下可切換語音開關');
+});
+
+// 返回地圖按鈕：直接回到首頁
 backBtn.addEventListener('click', () => {
   window.location.href = '/';
 });
 
-// 在畫面上只塗物件範圍內的多邊形遮罩
+// ===== 在畫面上繪製多邊形遮罩 =====
 function drawMasks(masks) {
   ctx.clearRect(0, 0, overlay.width, overlay.height);
   ctx.fillStyle = 'rgba(0,255,0,0.3)';
@@ -80,7 +79,7 @@ function drawMasks(masks) {
   });
 }
 
-// 播報語音
+// ===== 語音播報函式，加入冷卻時間 =====
 function speak(text) {
   const now = Date.now();
   if (!speechEnabled || now - lastSpeechTime < SPEECH_COOLDOWN) return;
@@ -90,7 +89,7 @@ function speak(text) {
   speechSynthesis.speak(u);
 }
 
-// 幀門檻與語音重複過濾
+// 幀門檻 + 重複過濾，避免頻繁播報
 function handleSpeech(resultText) {
   if (resultText === lastMovement) return;
   movementCounter++;
@@ -101,7 +100,7 @@ function handleSpeech(resultText) {
   }
 }
 
-// 啟用相機並定期送圖檢測
+// ===== 啟用相機並每秒送圖檢測 =====
 navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
   .then(stream => {
     video.srcObject = stream;
@@ -116,11 +115,13 @@ navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
     cam.classList.add('fixed');
 
     setInterval(async () => {
+      // 擷取影像
       const tmp = document.createElement('canvas');
       tmp.width  = overlay.width;
       tmp.height = overlay.height;
       tmp.getContext('2d').drawImage(video, 0, 0);
 
+      // 傳給後端辨識
       const dataUrl = tmp.toDataURL('image/jpeg');
       const res = await fetch('/detect', {
         method: 'POST',
@@ -138,54 +139,40 @@ navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
   })
   .catch(e => console.error('無法啟用相機：', e));
 
-// --- Mini Map 初始化與同步主地圖狀態 ---
+// ===== 小地圖 MiniMap 初始化 & 還原主地圖狀態 =====
 const miniMap = L.map('miniMap', {
   attributionControl: false,
   zoomControl: false
 });
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19
+}).addTo(miniMap);
 
-// 讀取主地圖暫存狀態，同步中心、縮放、定位、目的地與導航路線
+// 讀取暫存，還原主地圖中心、定位、目的地、路線
 const saved = sessionStorage.getItem('mapState');
 if (saved) {
   const state = JSON.parse(saved);
-  // 設定中心與縮放
   if (state.center && state.zoom) {
     miniMap.setView([state.center.lat, state.center.lng], state.zoom);
   } else {
     miniMap.setView([22.999728, 120.227028], 13);
   }
 
-  // 加入使用者定位標記
   if (state.userLocation) {
     L.marker([state.userLocation.lat, state.userLocation.lng])
       .addTo(miniMap)
       .bindPopup('您的位置');
   }
-
-  // 加入目的地標記
   if (state.destination) {
     L.marker([state.destination.lat, state.destination.lng])
       .addTo(miniMap)
       .bindPopup(state.destination.name || '目的地');
   }
-
-  // 加入並顯示導航路線
   if (state.routeGeoJSON) {
-    const miniRoute = L.geoJSON(state.routeGeoJSON, {
-      style: { color: 'blue', weight: 3 }
-    }).addTo(miniMap);
-    miniMap.fitBounds(miniRoute.getBounds());
+    const mRoute = L.geoJSON(state.routeGeoJSON, { style: { color: 'blue', weight: 3 } })
+      .addTo(miniMap);
+    miniMap.fitBounds(mRoute.getBounds());
   }
 } else {
-  // 無暫存則顯示預設位置
   miniMap.setView([22.999728, 120.227028], 13);
 }
-
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 19
-}).addTo(miniMap);
-
-// 返回主地圖：回到首頁，index.js 會還原先前地圖狀態
-backBtn.addEventListener('click', () => {
-  window.location.href = '/';
-});
