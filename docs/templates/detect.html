@@ -13,11 +13,23 @@
   <div class="app-container">
     <header class="header">
     <h1>即時辨識</h1>
-    <button id="speechToggle" class="speech-btn on" title="語音：開">
-      <i id="speechIcon" class="fa-solid fa-volume-high"></i>
-    </button>
+    <div class="speech-controls">
+      <!-- 語音開關按鈕 -->
+      <button id="speechToggle" class="speech-btn on" title="語音：開">
+        <i id="speechIcon" class="fa-solid fa-volume-high"></i>
+      </button>
+      <!-- 資訊 i 按鈕 -->
+      <button id="speechInfo" class="speech-info-btn" title="語音操作說明">
+        <i class="fa-solid fa-circle-info"></i>
+      </button>
+    </div>
+    </header>
   </header>
 
+  <!-- 文字提示：進入偵測頁面顯示語音開啟狀態 -->
+  <div id="speechNotice" class="speech-notice" style="display:none;">
+    語音播報開啟中…
+  </div>
   <div class="camera-container">
     <video id="video" autoplay muted></video>
     <canvas id="overlay"></canvas>

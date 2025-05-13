@@ -188,8 +188,8 @@ margin: 0;
 font-size: 24px;
 }
 .speech-btn {
-height: 100%;
-width: 50px;
+height: 90%;
+width: 40px;
 border: 1px solid #333;
 border-radius: 4px;
 display: flex;
@@ -197,10 +197,36 @@ align-items: center;
 justify-content: center;
 cursor: pointer;
 transition: background 0.2s;
+flex-shrink: 0;
 }
 .speech-btn.on  { background: #4caf50; }  /* 綠 */
 .speech-btn.off { background: #f44336; }  /* 紅 */
 .speech-btn i   { font-size: 20px; color: #fff; }
+
+/* --- 語音控制區 --- */
+.speech-controls {
+  height: 90%;
+  width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* 資訊 i 按鈕 */
+.speech-info-btn {
+  height: 100%;
+  width: 30px;
+  background: none;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: help;
+  font-size: 18px;
+  color: #333;
+}
+
 
 /* --- 相機畫面 --- */
 .camera-container {
