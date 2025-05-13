@@ -6,20 +6,19 @@
 }
 
 body, html {
-  height: 100%;               /* 設定為佔滿整個視窗高度 */
-  font-family: sans-serif;    /* 使用無襯線字體 */
-  margin: 0;                  /* 移除預設外距 */
-  background: #f0f0f0;        /* 淺灰色背景 */
-  overflow: hidden;           /* 防止出現捲軸 */
+  height: 100%;
+  font-family: sans-serif;
+  margin: 0;
+  background: #f0f0f0;
 }
 
-/* 預設電腦版樣式 */
 .app-container {
-  position: relative;     /* 作為絕對定位子元素的參考點 */
-  width: 100%;            /* 寬度填滿畫面 */
-  height: 100vh;          /* 高度填滿視窗 */
-  background: #fff;       /* 白色背景 */
-  overflow: hidden;       /* 防止內容超出 */
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  background: #fff;
+  /* 捲動改為預設，自動顯示滾動條 */
+  overflow: auto;
 }
 
 #map {
@@ -118,10 +117,13 @@ body, html {
 /* 手機寬度下（最大寬度768px）限定樣式 */
 @media (max-width: 768px) {
   .app-container {
-    max-width: 430px;         /* 限制最大寬度為430px（模擬手機裝置） */
-    margin: auto;             /* 水平置中 */
-    border: 1px solid #ccc;   /* 淺灰色邊框 */
-  }
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  background: #fff;
+  /* 捲動改為預設，自動顯示滾動條 */
+  overflow: auto;
+}
 
 /* 底部左右分割按鈕容器（兩個按鈕版本） */
 .split-buttons {
@@ -202,23 +204,28 @@ transition: background 0.2s;
 
 /* --- 相機畫面 --- */
 .camera-container {
-position: relative;
-width: 100%;
-max-width: 480px;
-margin: 50px auto 0;
-background: #000;
-overflow: hidden;
-box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  margin: 50px auto 0;
+  background: #000;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  height: 240px; /* 給個預設高度 */
 }
+
+/* 之後 JS 會動態套用 inline height 並加上 .fixed */
+.camera-container.fixed {
+  /* 允許 JS inline style 覆蓋 */
+  height: auto;
+}
+
 .camera-container video,
 .camera-container canvas {
-position: absolute;
-top: 0; left: 0;
-width: 100%;
-height: auto;
-}
-.camera-container.fixed {
-height: auto;
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: auto;
 }
 
 /* --- 輸出路況區：移除上方 margin，貼齊辨識區下緣 --- */
