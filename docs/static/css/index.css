@@ -19,13 +19,22 @@ body, html {
   overflow: auto;
 }
 
+#map-container {
+  position: relative;
+  width: 100%;
+  height: calc(100vh - 160px); /* 與 #map 一樣高 */
+  overflow: hidden;
+}
+
 #map {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
-  height: calc(100vh - 160px);
+  height: 100%; /* 高度繼承自外層容器 */
   z-index: 1;
+  transform-origin: center center;
+  transition: transform 0.3s ease;
 }
 
 /* 搜尋列 */
@@ -59,6 +68,30 @@ body, html {
   background: #909090;
 }
 
+/* 導航提示區塊 */
+#navigationPrompt {
+  position: absolute;
+  top: 10px;
+  left: 50px;
+  right: 10px;
+  z-index: 1000;
+  background: #00695c;
+  color: white;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 16px;
+  line-height: 1.6;
+  display: none; /* 預設隱藏，由 JS 控制 */
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+#navigationPrompt #currentRoad,
+#navigationPrompt #nextInstruction {
+  margin-bottom: 4px;
+}
+
+
+
 /* 搜尋結果清單 */
 .search-results {
   position: absolute;
@@ -88,13 +121,14 @@ body, html {
 .cancelRouteBtn {
   width: 100%;
   padding: 12px;
-  background-color: #a3a3a3;
+  background-color: #b9b9b9;
   color: white;
   font-weight: bold;
   border: none;
   border-radius: 0 0 10px 10px;
   cursor: pointer;
   font-size: 16px;
+  margin-top: 12px;
 }
 .cancelRouteBtn:hover {
   background-color: #777777;
@@ -129,6 +163,44 @@ body, html {
   height: 100%;
   align-self: center;
 }
+
+.leaflet-arrow-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%); /* 地圖中心點 */
+  z-index: 1000;
+  width: 50px;
+  height: 50px;
+}
+
+.arrow-background {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 50%;
+}
+
+/* 箭頭本體（含 clip-path） */
+.arrow-icon {
+  width: 72px;
+  height: 72px;
+  background-color: #0040ff;
+  position: relative;
+  clip-path: polygon(
+    50% 0%,    /* A: 頂端尖角 */
+    65% 55%,   /* B: 右上斜邊 */
+    55% 50%,   /* C: 右下內縮 */
+    45% 50%,   /* E: 左下內縮 */
+    35% 55%    /* F: 左上斜邊 */
+  );
+  transform-origin: center center;
+  transition: transform 0.2s linear;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+}
+
 
 /* ===== index.css 最後 ===== */
 
