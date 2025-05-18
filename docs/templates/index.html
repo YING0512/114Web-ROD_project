@@ -4,36 +4,56 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>街景辨識介面</title>
+  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+  <!-- Font Awesome for 語音按鈕 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}" />
   <script src="{{ url_for('static', filename='leaflet/leaflet.js') }}"></script>
 </head>
 <body>
+  <!-- ===== 語音開關 & 資訊 ===== -->
+  <div class="speech-controls" style="position:fixed; top:10px; right:10px; z-index:1001;">
+    <button id="speechToggle" class="speech-btn on" title="語音：開">
+      <i id="speechIcon" class="fa-solid fa-volume-high"></i>
+    </button>
+    <button id="speechInfo" class="speech-info-btn" title="語音操作說明">
+      <i class="fa-solid fa-circle-info"></i>
+    </button>
+  </div>
+  <div id="speechNotice" class="speech-notice" style="display:none;">
+    語音播報開啟中…
+  </div>
+
+  <!-- 你的原有介面… -->
   <div id="search-bar" class="search-bar">
     <input type="text" id="searchInput" placeholder="搜尋地點…" />
     <button id="searchBtn">🔍</button>
   </div>
-
   <div id="navigationPrompt" style="display: none;" class="navigation-prompt">
     <div id="currentRoad">正在行駛：未知路段</div>
     <div id="nextInstruction">即將進入：未知道路</div>
   </div>
-
   <ul id="searchResults" class="search-results"></ul>
- <div id="map-container">
-  <div id="map"></div>
-</div>
-
-  <!-- 控制面板 -->
+  <div id="map-container">
+    <div id="map"></div>
+  </div>
   <div class="split-buttons">
     <button class="half-btn" id="locateBtn">📍</button>
     <div class="divider"></div>
     <button class="half-btn" id="cameraBtn">📷</button>
   </div>
-
-  <!-- 相機輸入 -->
   <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;" />
 
+  <!-- 載入語音模組，並初始化、播放提示 -->
+  <script src="{{ url_for('static', filename='js/speech.js') }}"></script>
+  <script>
+    // initSpeech 會註冊三連擊切換、檢查支援
+    initSpeech();
+    // 確保一進到頁面就播報
+    speakNav("語音播報開啟中…");
+  </script>
+  <!-- 再載入地圖主要邏輯 -->
   <script src="{{ url_for('static', filename='js/index.js') }}"></script>
 </body>
 </html>

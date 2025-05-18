@@ -1,3 +1,81 @@
+// ===== 語音播報設定 =====
+const speechBtn       = document.getElementById('speechToggle');
+const speechIcon      = document.getElementById('speechIcon');
+const speechInfoBtn   = document.getElementById('speechInfo');
+const speechNotice    = document.getElementById('speechNotice');
+
+let speechEnabled     = true;
+const SPEECH_COOLDOWN = 5000;
+const FRAME_THRESHOLD = 3;
+let lastSpeechTime    = 0;
+let movementCounter   = 0;
+let lastInstruction   = "";
+
+// 切換語音開關
+speechBtn.addEventListener('click', toggleSpeech);
+function toggleSpeech() {
+  speechEnabled = !speechEnabled;
+  if (speechEnabled) {
+    speechIcon.className = 'fa-solid fa-volume-high';
+    speechBtn.classList.add('on');
+    speechBtn.classList.remove('off');
+    speechBtn.title = '語音：開';
+  } else {
+    speechIcon.className = 'fa-solid fa-volume-xmark';
+    speechBtn.classList.add('off');
+    speechBtn.classList.remove('on');
+    speechBtn.title = '語音：關';
+  }
+}
+
+// 三連擊切換（單手操作）
+let clicks = 0, clickTimer;
+document.body.addEventListener('click', () => {
+  clicks++;
+  if (clicks === 1) {
+    clickTimer = setTimeout(() => { clicks = 0; }, 600);
+  } else if (clicks === 3) {
+    clearTimeout(clickTimer);
+    clicks = 0;
+    toggleSpeech();
+  }
+});
+
+// 進入頁面時顯示提示並播報
+window.addEventListener('DOMContentLoaded', () => {
+  if (speechEnabled) {
+    speechNotice.style.display = 'block';
+    setTimeout(() => { speechNotice.style.display = 'none'; }, 3000);
+    speak("語音播報開啟中…");
+  }
+});
+
+// 資訊按鈕：顯示操作說明
+speechInfoBtn.addEventListener('click', () => {
+  alert('連續點擊畫面三下可切換語音開關');
+});
+
+// ===== 語音播報函式，加入冷卻時間 =====
+function speak(text) {
+  const now = Date.now();
+  if (!speechEnabled || now - lastSpeechTime < SPEECH_COOLDOWN) return;
+  lastSpeechTime = now;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'zh-TW';
+  speechSynthesis.speak(u);
+}
+
+// 幀門檻 + 重複過濾，避免頻繁播報
+function handleSpeech(resultText) {
+  if (resultText === lastMovement) return;
+  movementCounter++;
+  if (movementCounter >= FRAME_THRESHOLD) {
+    speak(resultText);
+    lastMovement    = resultText;
+    movementCounter = 0;
+  }
+}
+
 // 初始化地圖
 const map = L.map('map').setView([22.999728, 120.227028], 13);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -206,7 +284,7 @@ function handleDestinationSelect(place) {
 
   const url = `https://router.project-osrm.org/route/v1/driving/${startLon},${startLat};${destLon},${destLat}?overview=full&geometries=geojson&steps=true`;
 
-  fetch(url)
+    fetch(url)
     .then(res => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return res.json();
@@ -221,6 +299,7 @@ function handleDestinationSelect(place) {
 
       if (!route) throw new Error("路線資料缺失");
 
+      // 移除舊路線並繪製新路線
       if (routeLayer) map.removeLayer(routeLayer);
       routeLayer = L.geoJSON(route, { style: { color: 'blue', weight: 5 } }).addTo(map);
       map.fitBounds(routeLayer.getBounds());
@@ -234,7 +313,11 @@ function handleDestinationSelect(place) {
     .catch((err) => {
       console.error("路線規劃錯誤:", err);
       alert("路線規劃錯誤");
+      // 即便規劃失敗，若畫面上已有路線，也要顯示【取消導航】按鈕
+      showNavigationPrompt();
+      addCancelNavigationButton();
     });
+
 }
 
 
@@ -291,21 +374,12 @@ function showNavigationInstruction(steps) {
 
     document.getElementById('currentRoad').textContent = `目前在：${currentRoad}`;
     document.getElementById('nextInstruction').textContent = `接下來：${nextInstruction}`;
+
+    // 播報導航指示
+    handleSpeech(nextInstruction);
   }
 
-  function getManeuverText(m) {
-    switch (m.type) {
-      case "turn":
-        if (m.modifier === "left") return "左轉進入";
-        if (m.modifier === "right") return "右轉進入";
-        if (m.modifier === "straight") return "直行進入";
-        return `${m.modifier} 轉入`;
-      case "arrive":
-        return "抵達";
-      default:
-        return `${m.type}`;
-    }
-  }
+  updateInstruction(); // 立即顯示第一條指示
 
   const updateInterval = setInterval(() => {
     if (!userLocation) return;
@@ -314,7 +388,10 @@ function showNavigationInstruction(steps) {
 
     for (let i = 0; i < steps.length; i++) {
       const step = steps[i];
-      const latLng = L.latLng(step.maneuver.location[1], step.maneuver.location[0]);
+      const latLng = L.latLng(
+        step.maneuver.location[1],
+        step.maneuver.location[0]
+      );
       if (userLatLng.distanceTo(latLng) < 30) {
         currentStepIndex = i;
         updateInstruction();
@@ -328,7 +405,6 @@ function showNavigationInstruction(steps) {
     }
   }, 2000);
 }
-
 
 
 // **切換到影像辨識前，先儲存目前地圖狀態到 sessionStorage**
