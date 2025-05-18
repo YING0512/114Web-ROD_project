@@ -374,10 +374,24 @@ function showNavigationInstruction(steps) {
 
     document.getElementById('currentRoad').textContent = `目前在：${currentRoad}`;
     document.getElementById('nextInstruction').textContent = `接下來：${nextInstruction}`;
-
-    // 播報導航指示
-    handleSpeech(nextInstruction);
   }
+
+  function getManeuverText(m) {
+    switch (m.type) {
+      case "turn":
+        if (m.modifier === "left") return "左轉進入";
+        if (m.modifier === "right") return "右轉進入";
+        if (m.modifier === "straight") return "直行進入";
+        return `${m.modifier} 轉入`;
+      case "arrive":
+        return "抵達";
+      default:
+        return `${m.type}`;
+    }
+  }
+  // 播報導航指示
+  handleSpeech(nextInstruction);
+  
 
   updateInstruction(); // 立即顯示第一條指示
 
