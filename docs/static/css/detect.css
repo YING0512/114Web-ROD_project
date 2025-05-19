@@ -1,55 +1,66 @@
+/* ==========================================================================
+   全域重置：確保 padding、border 不影響元素大小，並移除預設邊距
+   ========================================================================== */
 * {
-  box-sizing: border-box; /* 讓 padding 和 border 不會增加元素實際寬高 */
-  margin: 0;              /* 移除預設外距 */
-  padding: 0;             /* 移除預設內距 */
+  box-sizing: border-box; /* padding 與 border 納入元素寬高計算 */
+  margin: 0;              /* 移除所有元素預設外距 */
+  padding: 0;             /* 移除所有元素預設內距 */
 }
-/* ========== Detect Page: Header 與語音開關 ========== */
-/* 顯示頁面標題及語音開關按鈕 */
+
+/* ====================================================================
+   偵測頁面 Header：顯示頁面標題與語音開關按鈕
+   ==================================================================== */
 .header {
-  position: fixed;
+  position: fixed;        /* 固定於畫面頂端 */
   top: 0; left: 0;
   width: 100%;
   height: 50px;
-  background: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  background: #fff;       /* 白色背景 */
+  display: flex;          /* 水平排列內部元素 */
+  align-items: center;    /* 垂直置中 */
+  justify-content: space-between; /* 左右分散 */
   padding: 0 16px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  z-index: 10;
+  z-index: 10;            /* 蓋在其他元素上方 */
 }
 .header h1 {
   margin: 0;
   font-size: 24px;
 }
-/* 語音按鈕：開關狀態變化 */
+
+/* ====================================================================
+   語音開關按鈕：根據 on/off 顯示不同樣式
+   ==================================================================== */
 .speech-btn {
   height: 40px;
   width: 60px;
   border: 1px solid #00000088;
   border-radius: 4px;
-  display: flex;
+  display: flex;          /* 置中圖示 */
   align-items: center;
   justify-content: center;
-  cursor: pointer;
+  cursor: pointer;        /* 手型游標 */
   transition: background 0.2s;
 }
-.speech-btn.on  { background: #4caf50; }  /* 綠 = 開 */
-.speech-btn.off { background: #f44336; }  /* 紅 = 關 */
+.speech-btn.on  { background: #4caf50; }  /* 綠色：語音開啟 */
+.speech-btn.off { background: #f44336; }  /* 紅色：語音關閉 */
 .speech-btn i   { font-size: 20px; color: #fff; }
 
-/* ========== Detect Page: 語音控制區 ========== */
-/* 語音控制區：顯示語音開關按鈕與資訊按鈕 */
+/* ====================================================================
+   語音控制區：包含語音開關與資訊按鈕
+   ==================================================================== */
 .speech-controls {
   height: 40px;
   width: 60px;
-  display: flex;
+  display: flex;          /* 置中內部按鈕 */
   align-items: center;
   justify-content: center;
   cursor: pointer;
 }
 
-/* 資訊按鈕：顯示操作說明 */
+/* ====================================================================
+   資訊按鈕：顯示語音操作說明
+   ==================================================================== */
 .speech-info-btn {
   height: 30px;
   width: 30px;
@@ -58,18 +69,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: help;
+  cursor: help;           /* 說明游標 */
   font-size: 18px;
   color: #000000bb;
 }
 
-/* ========== Detect Page: 語音狀態提示 ========== */
-/* 初次進入顯示「語音開啟中…」訊息 */
+/* ====================================================================
+   語音狀態提示：進入頁面時顯示「語音開啟中…」訊息
+   ==================================================================== */
 #speechNotice {
   position: absolute;
-  top: 60px;
+  top: 60px;               /* Header 下方 */
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-50%); /* 置中 */
   background: rgba(0,0,0,0.7);
   color: #fff;
   padding: 6px 12px;
@@ -77,19 +89,20 @@
   z-index: 11;
 }
 
-/* ========== Detect Page: 相機串流與遮罩 ========== */
-/* 相機輸出容器 */
+/* ====================================================================
+   相機串流容器：顯示攝影機畫面與遮罩
+   ==================================================================== */
 .camera-container {
   position: relative;
   width: 100%;
   max-width: 480px;
   margin: 50px auto 0;
-  background: #000;
+  background: #000;        /* 黑色背景填滿多餘空間 */
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  height: 240px; /* 初始預設 */
+  height: 240px;           /* 初始預設高度 */
 }
-/* 當 video 實際大小載入後，JS 會加上 .fixed 以移除預設高度 */
+/* 當 video 實際載入後，JS 會加入 .fixed 以移除固定高度 */
 .camera-container.fixed {
   height: auto;
 }
@@ -101,11 +114,12 @@
   height: auto;
 }
 #overlay {
-  pointer-events: none; /* 讓遮罩不攔截點擊 */
+  pointer-events: none;   /* 讓遮罩不阻擋滑鼠事件 */
 }
 
-/* ========== Detect Page: 辨識結果顯示 ========== */
-/* 結果框：顯示文字與語音提示 */
+/* ====================================================================
+   辨識結果顯示框：包含「辨識結果」文字與內容
+   ==================================================================== */
 .result-box {
   width: 100%;
   max-width: 480px;
@@ -114,7 +128,7 @@
   padding: 0 12px;
   background: #fff;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  display: flex;
+  display: flex;          /* 水平排列內部元素 */
   align-items: center;
 }
 .result-label {
@@ -123,20 +137,21 @@
   margin-right: 8px;
 }
 .result-content {
-  flex: 1;
+  flex: 1;                /* 自動撐滿剩餘空間 */
   font-size: 18px;
 }
 
-/* ========== Detect Page: 返回地圖 + 縮略圖 ========== */
-/* 功能區總容器 */
+/* ====================================================================
+   返回地圖按鈕與縮略圖容器
+   ==================================================================== */
 .output-container {
   width: 100%;
   max-width: 480px;
   margin: 0 auto;
-  display: flex;
+  display: flex;          /* 按鈕與縮圖並排 */
   height: 300px;
 }
-/* 返回主地圖按鈕（ICON 上，文字下） */
+/* 返回主地圖按鈕：圖示上方，文字下方 */
 .back-btn {
   flex: 1;
   display: flex;
@@ -162,43 +177,46 @@
   font-size: 20px;
   line-height: 1;
 }
-/* 縮略地圖容器 */
+/* 縮略地圖容器，放置 MiniMap */
 .reserved-area {
   flex: 2;
   position: relative;
 }
 
-/* ===== Detect Page：導航文字提示 ===== */
+/* ====================================================================
+   偵測頁導航文字提示：顯示目前路段與下一步提示
+   ==================================================================== */
 #navigationPrompt {
-  display: none;                /* 由 JS 控制 */
-  position: absolute;           /* 置於 reserved-area 內 */
-  top: 572px;                       
-  left: 128px;               /* 由 JS 計算 */
-  width: 255px;                  /* 滿版寬 */
-  height: 50px;                   /* 固定高度 */
+  display: none;          /* 由 JS 控制顯示 */
+  position: absolute;
+  top: 572px;             /* 根據 layout 調整位置，可改為 JS 動態計算 */
+  left: 128px;
+  width: 255px;
+  height: 50px;
   background: rgba(0,105,92,0.9);
   color: #fff;
   text-align: left;
   font-size: 16px;
   text-indent: 1em;
-  z-index: 5;                   /* 蓋在地圖上方 */
+  z-index: 5;
 }
-/* mini-map 下移，避開提示區 */
+/* MiniMap 下方位置，避開提示區 */
 .mini-map {
   position: absolute;
-  top: 50px;                    /* 與 #navigationPrompt padding 合理對齊 */
+  top: 50px;              /* 與提示區高度對齊 */
   left: 0;
   width: 100%;
-  height: calc(100% - 50px);    /* 剩餘高度自動填滿 */
+  height: calc(100% - 50px);
 }
 
-/* ===== Detect Page 手機響應式：寬度不超出螢幕 ===== */
+/* ====================================================================
+   手機響應式：畫面寬度 <= 768px 時，寬度 100% 且置中
+   ==================================================================== */
 @media screen and (max-width: 768px) {
-  /* 相機容器、結果框、功能區容器都寬度100% */
   .camera-container,
   .result-box {
     width: 100%;
     max-width: 100%;
-    margin: 0 auto; /* 保持置中 */
+    margin: 0 auto;
   }
 }

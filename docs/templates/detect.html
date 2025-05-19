@@ -1,70 +1,89 @@
 <!doctype html>
 <html lang="zh-TW">
 <head>
+  <!-- 設定文件字符編碼與響應式視窗 -->
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <!-- 網頁標題 -->
   <title>即時辨識</title>
-  <!-- Leaflet CSS -->
+
+  <!-- 載入 Leaflet 地圖樣式 -->
   <link rel="stylesheet" href="{{ url_for('static', filename='leaflet/leaflet.css') }}" />
+  <!-- 載入 Font Awesome 圖示庫，用於按鈕圖示 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous"></script>
+  <!-- 載入本頁面專用 CSS -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/detect.css') }}">
 </head>
+
 <body class="detect-page">
   <div class="app-container">
+    <!-- 語音控制區塊：固定於右上角 -->
     <div class="speech-controls" style="position:fixed; top:10px; right:10px; z-index:10000;">
       <!-- 語音開關按鈕 -->
       <button id="speechToggle" class="speech-btn on" title="語音：開">
+        <!-- 音量圖示，動態切換 on/off -->
         <i id="speechIcon" class="fa-solid fa-volume-high"></i>
       </button>
-      <!-- 資訊 i 按鈕 -->
+      <!-- 語音操作說明按鈕（資訊 i） -->
       <button id="speechInfo" class="speech-info-btn" title="語音操作說明">
         <i class="fa-solid fa-circle-info"></i>
       </button>
     </div>
 
-    <!-- 文字提示：進入偵測頁面顯示語音開啟狀態 -->
+    <!-- 文字提示：進入偵測頁面時顯示語音開啟狀態 -->
     <div id="speechNotice" class="speech-notice" style="display:none;">
       語音播報開啟中…
     </div>
 
+    <!-- 相機與遮罩畫面容器 -->
     <div class="camera-container">
+      <!-- 直播視訊元素 -->
       <video id="video" autoplay muted></video>
+      <!-- 偵測結果畫框（Canvas） -->
       <canvas id="overlay"></canvas>
     </div>
 
+    <!-- 辨識結果顯示框 -->
     <div class="result-box">
+      <!-- 標籤文字 -->
       <div class="result-label">辨識結果：</div>
+      <!-- 偵測到的結果內容會寫入此處 -->
       <div id="result" class="result-content"></div>
     </div>
 
+    <!-- 功能列：返回地圖、導航提示、小地圖 -->
     <div class="output-container">
-      <!-- 返回地圖按鈕：icon 在上，文字在下，置中，icon 大小佔按鈕 1/2 -->
+      <!-- 返回地圖按鈕：圖示置上、文字置下、置中 -->
       <button id="backBtn" class="back-btn">
         <i class="fa-solid fa-map-location-dot fa-2x"></i>
         <span class="btn-text">返回地圖</span>
       </button>
 
+      <!-- 導航提示區（預設隱藏） -->
       <div id="navigationPrompt" style="display:none;" class="navigation-prompt">
+        <!-- 當前行駛路段 -->
         <div id="currentRoad">正在行駛：未知路段</div>
+        <!-- 下一步導航指示 -->
         <div id="nextInstruction">即將進入：未知道路</div>
       </div>
 
+      <!-- 保留區：放置縮小地圖（miniMap） -->
       <div class="reserved-area">
         <div id="miniMap" class="mini-map"></div>
       </div>
     </div>
 
-    <!-- Leaflet JS -->
+    <!-- 載入 Leaflet 地圖核心腳本 -->
     <script src="{{ url_for('static', filename='leaflet/leaflet.js') }}"></script>
-    <!-- 語音模組 -->
+    <!-- 載入自訂語音模組腳本（處理三連擊、語音開關等） -->
     <script src="{{ url_for('static', filename='js/speech.js') }}"></script>
     <script>
-      initSpeech();  // 註冊三連擊切換、檢查支援
-      // 進入偵測頁立即提示語音
+      // 初始化語音功能：註冊三連擊切換、檢查瀏覽器支援度
+      initSpeech();
+      // 進入偵測頁立即播報語音提示
       speakNav("語音播報開啟中…");
     </script>
-    <!-- 再載入偵測邏輯 -->
-    <script src="{{ url_for('static', filename='js/detect.js') }}"></script>
+    <!-- 載入影像偵測邏輯腳本（執行模型推論並顯示結果） -->
     <script src="{{ url_for('static', filename='js/detect.js') }}"></script>
   </div>
 </body>

@@ -1,31 +1,35 @@
-// ===== 初始 DOM 取得 =====
-const video        = document.getElementById('video');
-const overlay      = document.getElementById('overlay');
-const ctx          = overlay.getContext('2d');
-const resultEl     = document.getElementById('result');
-const speechBtn    = document.getElementById('speechToggle');
-const speechIcon   = document.getElementById('speechIcon');
-const backBtn      = document.getElementById('backBtn');
-const speechInfoBtn= document.getElementById('speechInfo');
-const notice       = document.getElementById('speechNotice');
+// ===== 初始 DOM 元素取得 =====
+// 取得 video、canvas、結果顯示、語音與按鈕等 DOM 元素引用
+const video         = document.getElementById('video');
+const overlay       = document.getElementById('overlay');
+const ctx           = overlay.getContext('2d');
+const resultEl      = document.getElementById('result');
+const speechBtn     = document.getElementById('speechToggle');
+const speechIcon    = document.getElementById('speechIcon');
+const backBtn       = document.getElementById('backBtn');
+const speechInfoBtn = document.getElementById('speechInfo');
+const notice        = document.getElementById('speechNotice');
 
-let speechEnabled   = true;            // 語音預設開啟
-const SPEECH_COOLDOWN = 5000;          // 語音最短間隔
-const FRAME_THRESHOLD = 3;             // 辨識結果語音連續幀門檻
-let lastSpeechTime  = 0;
-let movementCounter = 0;
-let lastMovement    = "";
+// ===== 語音播報參數設定 =====
+let speechEnabled    = true;    // TODO: 預設語音為「開」
+const SPEECH_COOLDOWN = 5000;    // 語音最短間隔：5 秒鐘
+const FRAME_THRESHOLD = 3;       // 當同一結果連續出現的幀數門檻
+let lastSpeechTime   = 0;        // 上次播報時間戳
+let movementCounter  = 0;        // 連續相同結果計數器
+let lastMovement     = "";       // 上次播報內容
 
-// ===== 切換語音開關 =====
+// ===== 語音開關按鈕 點擊處理 =====
 speechBtn.addEventListener('click', toggleSpeech);
 function toggleSpeech() {
-  speechEnabled = !speechEnabled;
+  speechEnabled = !speechEnabled;  // 切換狀態
   if (speechEnabled) {
+    // 開啟語音：圖示 + 樣式 + title
     speechIcon.className = 'fa-solid fa-volume-high';
     speechBtn.classList.add('on');
     speechBtn.classList.remove('off');
     speechBtn.title = '語音：開';
   } else {
+    // 關閉語音：圖示 + 樣式 + title
     speechIcon.className = 'fa-solid fa-volume-xmark';
     speechBtn.classList.add('off');
     speechBtn.classList.remove('on');
@@ -33,53 +37,56 @@ function toggleSpeech() {
   }
 }
 
-// ===== 連點三下切換語音（方便單手操作） =====
+// ===== 三連擊全頁 切換語音 =====
+// 便於單手操作：連續點擊 3 下便觸發 toggleSpeech()
 let clicks = 0, clickTimer;
 document.body.addEventListener('click', () => {
   clicks++;
   if (clicks === 1) {
+    // 首次點擊後啟動計時器，600ms 內若未三擊則重置
     clickTimer = setTimeout(() => { clicks = 0; }, 600);
   } else if (clicks === 3) {
+    // 三擊完成，清除計時器並切換語音
     clearTimeout(clickTimer);
     clicks = 0;
     toggleSpeech();
   }
 });
 
-// ===== 進入頁面時提示「語音開啟中…」 =====
+// ===== 進入頁面時 顯示「語音開啟中…」提示 =====
 window.addEventListener('DOMContentLoaded', () => {
   if (speechEnabled) {
-    notice.style.display = 'block';
-    setTimeout(() => { notice.style.display = 'none'; }, 3000);
-    speak("語音播報開啟中...");
+    notice.style.display = 'block';              // 顯示提示文字
+    setTimeout(() => { notice.style.display = 'none'; }, 3000);  // 3 秒後隱藏
+    speak("語音播報開啟中...");                  // 立即播報一次
   }
 });
 
-// 資訊按鈕：顯示操作說明
+// ===== 語音操作資訊 按鈕 =====
 speechInfoBtn.addEventListener('click', () => {
-  alert('連續點擊畫面三下可切換語音開關');
+  alert('連續點擊畫面三下可切換語音開關');  // 跳出提示說明
 });
 
-// 返回地圖按鈕：直接回到首頁
+// ===== 返回地圖 按鈕 行為 =====
 backBtn.addEventListener('click', () => {
-  window.location.href = '/';
+  window.location.href = '/';  // 導回首頁（地圖頁）
 });
 
-// ===== 在畫面上繪製多邊形遮罩 =====
+// ===== 繪製辨識遮罩 多邊形 =====
 function drawMasks(masks) {
-  ctx.clearRect(0, 0, overlay.width, overlay.height);
-  ctx.fillStyle = 'rgba(0,255,0,0.3)';
+  ctx.clearRect(0, 0, overlay.width, overlay.height);  // 清空畫布
+  ctx.fillStyle = 'rgba(0,255,0,0.3)';                 // 半透明綠色
   masks.forEach(poly => {
     ctx.beginPath();
     poly.forEach(([x, y], i) => {
       i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     });
     ctx.closePath();
-    ctx.fill();
+    ctx.fill();  // 填滿多邊形
   });
 }
 
-// ===== 語音播報函式，加入冷卻時間 =====
+// ===== 語音播報函式（含冷卻時間控制） =====
 function speak(text) {
   const now = Date.now();
   if (!speechEnabled || now - lastSpeechTime < SPEECH_COOLDOWN) return;
@@ -89,9 +96,9 @@ function speak(text) {
   speechSynthesis.speak(u);
 }
 
-// 幀門檻 + 重複過濾，避免頻繁播報
+// 幀門檻 + 重複過濾，避免連續重複播報
 function handleSpeech(resultText) {
-  if (resultText === lastMovement) return;
+  if (resultText === lastMovement) return;  // 相同文字則跳過
   movementCounter++;
   if (movementCounter >= FRAME_THRESHOLD) {
     speak(resultText);
@@ -100,28 +107,27 @@ function handleSpeech(resultText) {
   }
 }
 
-// ===== 啟用相機並每秒送圖檢測 =====
+// ===== 啟用相機並定時送影像至後端偵測 =====
 navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
   .then(stream => {
     video.srcObject = stream;
     return new Promise(r => video.onloadedmetadata = r);
   })
   .then(() => {
-    // 同步 overlay 大小
+    // 同步 overlay 大小與相機容器高度
     overlay.width  = video.videoWidth;
     overlay.height = video.videoHeight;
     const cam = document.querySelector('.camera-container');
     cam.style.height = `${video.videoHeight * (cam.clientWidth / video.videoWidth)}px`;
     cam.classList.add('fixed');
 
+    // 每秒擷取影像並傳給 /detect API
     setInterval(async () => {
-      // 擷取影像
       const tmp = document.createElement('canvas');
       tmp.width  = overlay.width;
       tmp.height = overlay.height;
       tmp.getContext('2d').drawImage(video, 0, 0);
 
-      // 傳給後端辨識
       const dataUrl = tmp.toDataURL('image/jpeg');
       const res = await fetch('/detect', {
         method: 'POST',
@@ -130,16 +136,15 @@ navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
       });
       const { masks, result } = await res.json();
 
-      if (masks && masks.length) {
-        drawMasks(masks);
-      }
+      // 繪製遮罩並顯示文字結果
+      if (masks && masks.length) drawMasks(masks);
       resultEl.innerText = result;
       handleSpeech(result);
     }, 1000);
   })
   .catch(e => console.error('無法啟用相機：', e));
 
-// ===== 小地圖 MiniMap 初始化 & 還原主地圖狀態 =====
+// ===== MiniMap 初始化 & 還原主地圖狀態 =====
 const miniMap = L.map('miniMap', {
   attributionControl: false,
   zoomControl: false
@@ -148,43 +153,52 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19
 }).addTo(miniMap);
 
-// 讀取暫存，還原主地圖中心、定位、目的地、路線
+// 從 sessionStorage 讀取地圖狀態並恢復
 const saved = sessionStorage.getItem('mapState');
 if (saved) {
   const state = JSON.parse(saved);
+
+  // 還原中心與縮放
   if (state.center && state.zoom) {
     miniMap.setView([state.center.lat, state.center.lng], state.zoom);
   } else {
     miniMap.setView([22.999728, 120.227028], 13);
   }
 
+  // 還原使用者定位點
   if (state.userLocation) {
     L.marker([state.userLocation.lat, state.userLocation.lng])
       .addTo(miniMap)
       .bindPopup('您的位置');
   }
+  // 還原目的地點
   if (state.destination) {
     L.marker([state.destination.lat, state.destination.lng])
       .addTo(miniMap)
       .bindPopup(state.destination.name || '目的地');
   }
+  // 還原路線並調整視野
   if (state.routeGeoJSON) {
     const mRoute = L.geoJSON(state.routeGeoJSON, { style: { color: 'blue', weight: 3 } })
       .addTo(miniMap);
     miniMap.fitBounds(mRoute.getBounds());
   }
+  // 若有導航步驟則顯示於 detect 頁面
   if (state.steps && state.steps.length) {
     showDetectNavigationInstruction(state.steps, state.userLocation);
   }
 } else {
+  // 無儲存資料時使用預設位置
   miniMap.setView([22.999728, 120.227028], 13);
 }
 
+// ===== 偵測頁面導航指示顯示與播報 =====
 function showDetectNavigationInstruction(steps, userLoc) {
   const navBox = document.getElementById('navigationPrompt');
   navBox.style.display = 'block';
 
   let idx = 0;
+  // 根據 Maneuver 型別與 modifier 轉中文指令
   function getManeuverText(m) {
     switch (m.type) {
       case "turn":
@@ -199,6 +213,7 @@ function showDetectNavigationInstruction(steps, userLoc) {
     }
   }
 
+  // 更新畫面文字並語音播報
   function update() {
     const step     = steps[idx];
     const nextStep = steps[idx+1];
@@ -206,19 +221,21 @@ function showDetectNavigationInstruction(steps, userLoc) {
       ? `${Math.round(nextStep.distance)}公尺後${getManeuverText(nextStep.maneuver)}${nextStep.name || "無名道路"}`
       : "已抵達目的地";
 
-    document.getElementById('currentRoad').textContent   = `目前在：${step.name || "無名道路"}`;
+    document.getElementById('currentRoad').textContent    = `目前在：${step.name || "無名道路"}`;
     document.getElementById('nextInstruction').textContent = speechText;
-    speak(speechText); // 使用 detect.js 內的 speak() 進行播報
+    speak(speechText);
   }
 
-  update(); // 先播第一條
+  update();  // 首次播報
 
+  // 以 2 秒週期檢查使用者位置與下個導航點距離
   const checkNav = setInterval(() => {
-    const userLatLng = L.latLng(userLoc.lat, userLoc.lng);
+    const userLatLng   = L.latLng(userLoc.lat, userLoc.lng);
     const targetLatLng = L.latLng(
       steps[idx].maneuver.location[1],
       steps[idx].maneuver.location[0]
     );
+    // 若已接近則進入下一步
     if (userLatLng.distanceTo(targetLatLng) < 20) {
       idx++;
       if (idx < steps.length) {
