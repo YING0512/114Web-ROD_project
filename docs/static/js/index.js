@@ -11,6 +11,8 @@ let lastSpeechTime    = 0;
 let movementCounter   = 0;
 let lastInstruction   = "";
 let navigationSteps = [];
+let positionCheck = null;
+
 
 // 切換語音開關
 speechBtn.addEventListener('click', toggleSpeech);
@@ -325,27 +327,48 @@ function addCancelNavigationButton() {
   cancelBtn.textContent = '取消導航';
 
   cancelBtn.addEventListener('click', () => {
-    hideNavigationPrompt();
-    if (routeLayer) map.removeLayer(routeLayer);
-    if (destinationMarker) map.removeLayer(destinationMarker);
-    isNavigating = false;
+  hideNavigationPrompt();
 
-    // 重設使用者標記為預設樣式
-    if (userMarker) {
-      map.removeLayer(userMarker);
-      userMarker = L.marker(userLocation, { icon: createDefaultMarkerIcon() })
-        .addTo(map).bindPopup("您的位置").openPopup();
-    }
+  if (routeLayer) {
+    map.removeLayer(routeLayer);
+    routeLayer = null;
+  }
 
-    // 清空搜尋結果
-    resultsContainer.innerHTML = '';
-    resultsContainer.style.display = 'none';
+  if (destinationMarker) {
+    map.removeLayer(destinationMarker);
+    destinationMarker = null;
+  }
 
-    // 移除按鈕
-    cancelBtn.remove();
-  });
+  isNavigating = false;
+  navigationSteps = [];
 
-  navBox.appendChild(cancelBtn); // ✅ 正確：加在導航提示區塊
+  if (userMarker) {
+    map.removeLayer(userMarker);
+    userMarker = L.marker(userLocation, { icon: createDefaultMarkerIcon() })
+      .addTo(map).bindPopup("您的位置").openPopup();
+  }
+
+  
+  const existingCancelBtn = document.querySelector('.cancelRouteBtn');
+  if (existingCancelBtn) existingCancelBtn.remove();
+
+  
+  document.getElementById('search-bar').style.display = 'flex';
+  resultsContainer.innerHTML = '';
+  resultsContainer.style.display = 'block';
+  searchInput.disabled = false;
+
+  
+  if (positionCheck) {
+    clearInterval(positionCheck);
+    positionCheck = null;
+  }
+
+  
+  document.getElementById('currentRoad').textContent = '';
+  document.getElementById('nextInstruction').textContent = '';
+});
+  navBox.appendChild(cancelBtn); 
 }
 
 // ===== 顯示導航指示（含語音播報） =====
@@ -389,7 +412,7 @@ function showNavigationInstruction(steps) {
 
   updateInstruction(); // ◎ 立即顯示並播報第一條指示
 
-  const positionCheck = setInterval(() => {
+  positionCheck = setInterval(() => {
     if (!userLocation) return;
     const userLatLng = L.latLng(userLocation[0], userLocation[1]);
     const step       = steps[currentStepIndex];
