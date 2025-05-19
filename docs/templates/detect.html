@@ -43,6 +43,12 @@
         <i class="fa-solid fa-map-location-dot fa-2x"></i>
         <span class="btn-text">返回地圖</span>
       </button>
+
+      <div id="navigationPrompt" style="display:none;" class="navigation-prompt">
+        <div id="currentRoad">正在行駛：未知路段</div>
+        <div id="nextInstruction">即將進入：未知道路</div>
+      </div>
+
       <div class="reserved-area">
         <div id="miniMap" class="mini-map"></div>
       </div>
@@ -50,6 +56,15 @@
 
     <!-- Leaflet JS -->
     <script src="{{ url_for('static', filename='leaflet/leaflet.js') }}"></script>
+    <!-- 語音模組 -->
+    <script src="{{ url_for('static', filename='js/speech.js') }}"></script>
+    <script>
+      initSpeech();  // 註冊三連擊切換、檢查支援
+      // 進入偵測頁立即提示語音
+      speakNav("語音播報開啟中…");
+    </script>
+    <!-- 再載入偵測邏輯 -->
+    <script src="{{ url_for('static', filename='js/detect.js') }}"></script>
     <script src="{{ url_for('static', filename='js/detect.js') }}"></script>
   </div>
 </body>

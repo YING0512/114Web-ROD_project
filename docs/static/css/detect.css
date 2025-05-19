@@ -134,7 +134,7 @@
   max-width: 480px;
   margin: 0 auto;
   display: flex;
-  height: 200px;
+  height: 300px;
 }
 /* 返回主地圖按鈕（ICON 上，文字下） */
 .back-btn {
@@ -146,7 +146,6 @@
   height: 100%;
   background: #fff;
   border: 1px solid #ccc;
-  border-radius: 4px;
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   text-align: center;
@@ -168,11 +167,29 @@
   flex: 2;
   position: relative;
 }
+
+/* ===== Detect Page：導航文字提示 ===== */
+#navigationPrompt {
+  display: none;                /* 由 JS 控制 */
+  position: absolute;           /* 置於 reserved-area 內 */
+  top: 572px;                       
+  left: 128px;               /* 由 JS 計算 */
+  width: 255px;                  /* 滿版寬 */
+  height: 50px;                   /* 固定高度 */
+  background: rgba(0,105,92,0.9);
+  color: #fff;
+  text-align: left;
+  font-size: 16px;
+  text-indent: 1em;
+  z-index: 5;                   /* 蓋在地圖上方 */
+}
+/* mini-map 下移，避開提示區 */
 .mini-map {
   position: absolute;
-  top: 0; left: 0;
+  top: 50px;                    /* 與 #navigationPrompt padding 合理對齊 */
+  left: 0;
   width: 100%;
-  height: 100%;
+  height: calc(100% - 50px);    /* 剩餘高度自動填滿 */
 }
 
 /* ===== Detect Page 手機響應式：寬度不超出螢幕 ===== */

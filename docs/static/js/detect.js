@@ -173,6 +173,60 @@ if (saved) {
       .addTo(miniMap);
     miniMap.fitBounds(mRoute.getBounds());
   }
+  if (state.steps && state.steps.length) {
+    showDetectNavigationInstruction(state.steps, state.userLocation);
+  }
 } else {
   miniMap.setView([22.999728, 120.227028], 13);
+}
+
+function showDetectNavigationInstruction(steps, userLoc) {
+  const navBox = document.getElementById('navigationPrompt');
+  navBox.style.display = 'block';
+
+  let idx = 0;
+  function getManeuverText(m) {
+    switch (m.type) {
+      case "turn":
+        if (m.modifier === "left")     return "左轉進入";
+        if (m.modifier === "right")    return "右轉進入";
+        if (m.modifier === "straight") return "直行進入";
+        return `${m.modifier} 轉入`;
+      case "arrive":
+        return "抵達";
+      default:
+        return `${m.type}`;
+    }
+  }
+
+  function update() {
+    const step     = steps[idx];
+    const nextStep = steps[idx+1];
+    const speechText = nextStep
+      ? `${Math.round(nextStep.distance)}公尺後${getManeuverText(nextStep.maneuver)}${nextStep.name || "無名道路"}`
+      : "已抵達目的地";
+
+    document.getElementById('currentRoad').textContent   = `目前在：${step.name || "無名道路"}`;
+    document.getElementById('nextInstruction').textContent = speechText;
+    speak(speechText); // 使用 detect.js 內的 speak() 進行播報
+  }
+
+  update(); // 先播第一條
+
+  const checkNav = setInterval(() => {
+    const userLatLng = L.latLng(userLoc.lat, userLoc.lng);
+    const targetLatLng = L.latLng(
+      steps[idx].maneuver.location[1],
+      steps[idx].maneuver.location[0]
+    );
+    if (userLatLng.distanceTo(targetLatLng) < 20) {
+      idx++;
+      if (idx < steps.length) {
+        update();
+      } else {
+        clearInterval(checkNav);
+        speak("您已抵達目的地");
+      }
+    }
+  }, 2000);
 }

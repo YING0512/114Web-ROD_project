@@ -10,6 +10,7 @@ const FRAME_THRESHOLD = 3;
 let lastSpeechTime    = 0;
 let movementCounter   = 0;
 let lastInstruction   = "";
+let navigationSteps = [];
 
 // 切換語音開關
 speechBtn.addEventListener('click', toggleSpeech);
@@ -296,28 +297,20 @@ function handleDestinationSelect(place) {
 
       const route = data.routes[0].geometry;
       const steps = data.routes[0].legs?.[0]?.steps;
-
-      if (!route) throw new Error("路線資料缺失");
-
-      // 移除舊路線並繪製新路線
-      if (routeLayer) map.removeLayer(routeLayer);
-      routeLayer = L.geoJSON(route, { style: { color: 'blue', weight: 5 } }).addTo(map);
-      map.fitBounds(routeLayer.getBounds());
-
+      navigationSteps = steps;                                // ◎ 保存 steps
+      speakNav(`正在導航到${place.display_name}`);             // ◎ 播報目的地
       if (steps && steps.length) showNavigationInstruction(steps);
-
       isNavigating = true;
       updateUserLocation(userLocation[0], userLocation[1]);
       addCancelNavigationButton();
-    })
-    .catch((err) => {
-      console.error("路線規劃錯誤:", err);
-      alert("路線規劃錯誤");
-      // 即便規劃失敗，若畫面上已有路線，也要顯示【取消導航】按鈕
-      showNavigationPrompt();
-      addCancelNavigationButton();
+        })
+        .catch((err) => {
+          console.error("路線規劃錯誤:", err);
+          alert("路線規劃錯誤");
+          // 即便規劃失敗，若畫面上已有路線，也要顯示【取消導航】按鈕
+          showNavigationPrompt();
+          addCancelNavigationButton();
     });
-
 }
 
 
@@ -355,6 +348,7 @@ function addCancelNavigationButton() {
   navBox.appendChild(cancelBtn); // ✅ 正確：加在導航提示區塊
 }
 
+// ===== 顯示導航指示（含語音播報） =====
 function showNavigationInstruction(steps) {
   showNavigationPrompt();
   const navBox = document.getElementById('navigationPrompt');
@@ -362,25 +356,11 @@ function showNavigationInstruction(steps) {
 
   let currentStepIndex = 0;
 
-  function updateInstruction() {
-    const step = steps[currentStepIndex];
-    if (!step) return;
-
-    const currentRoad = step.name || "無名道路";
-    const nextStep = steps[currentStepIndex + 1];
-    const nextInstruction = nextStep
-      ? `${getManeuverText(nextStep.maneuver)}${nextStep.name || "無名道路"}`
-      : "已抵達目的地";
-
-    document.getElementById('currentRoad').textContent = `目前在：${currentRoad}`;
-    document.getElementById('nextInstruction').textContent = `接下來：${nextInstruction}`;
-  }
-
   function getManeuverText(m) {
     switch (m.type) {
       case "turn":
-        if (m.modifier === "left") return "左轉進入";
-        if (m.modifier === "right") return "右轉進入";
+        if (m.modifier === "left")     return "左轉進入";
+        if (m.modifier === "right")    return "右轉進入";
         if (m.modifier === "straight") return "直行進入";
         return `${m.modifier} 轉入`;
       case "arrive":
@@ -389,51 +369,69 @@ function showNavigationInstruction(steps) {
         return `${m.type}`;
     }
   }
-  // 播報導航指示
-  handleSpeech(nextInstruction);
-  
 
-  updateInstruction(); // 立即顯示第一條指示
+  function updateInstruction() {
+    const step     = steps[currentStepIndex];
+    const nextStep = steps[currentStepIndex + 1];
 
-  const updateInterval = setInterval(() => {
+    // 計算語音播報內容
+    const speechText = nextStep
+      ? `${Math.round(nextStep.distance)}公尺後${getManeuverText(nextStep.maneuver)}${nextStep.name || "無名道路"}`
+      : "已抵達目的地";
+
+    // 顯示文字
+    document.getElementById('currentRoad').textContent   = `目前在：${step.name || "無名道路"}`;
+    document.getElementById('nextInstruction').textContent = speechText;
+
+    // 語音播報
+    speakNav(speechText);
+  }
+
+  updateInstruction(); // ◎ 立即顯示並播報第一條指示
+
+  const positionCheck = setInterval(() => {
     if (!userLocation) return;
-
     const userLatLng = L.latLng(userLocation[0], userLocation[1]);
-
-    for (let i = 0; i < steps.length; i++) {
-      const step = steps[i];
-      const latLng = L.latLng(
-        step.maneuver.location[1],
-        step.maneuver.location[0]
-      );
-      if (userLatLng.distanceTo(latLng) < 30) {
-        currentStepIndex = i;
+    const step       = steps[currentStepIndex];
+    const latLng     = L.latLng(
+      step.maneuver.location[1],
+      step.maneuver.location[0]
+    );
+    if (userLatLng.distanceTo(latLng) < 20) {
+      currentStepIndex++;
+      if (currentStepIndex < steps.length) {
         updateInstruction();
-        break;
+      } else {
+        clearInterval(positionCheck);
+        speakNav("您已抵達目的地");
+        hideNavigationPrompt();
       }
-    }
-
-    if (currentStepIndex >= steps.length - 1) {
-      clearInterval(updateInterval);
-      document.getElementById('nextInstruction').textContent = '已抵達目的地';
     }
   }, 2000);
 }
+
 
 
 // **切換到影像辨識前，先儲存目前地圖狀態到 sessionStorage**
 document.getElementById('cameraBtn').addEventListener('click', () => {
   const center = map.getCenter();
   const state = {
-    center: { lat: center.lat, lng: center.lng },
-    zoom: map.getZoom(),
-    userLocation: userLocation ? { lat: userLocation[0], lng: userLocation[1] } : null,
-    destination: destinationMarker ? {
-      lat: destinationMarker.getLatLng().lat,
-      lng: destinationMarker.getLatLng().lng,
-      name: destinationMarker.getPopup().getContent()
-    } : null,
-    routeGeoJSON: routeLayer ? routeLayer.toGeoJSON() : null
+    center:   { lat: center.lat, lng: center.lng },
+    zoom:      map.getZoom(),
+    userLocation: userLocation 
+      ? { lat: userLocation[0], lng: userLocation[1] }
+      : null,
+    destination: destinationMarker
+      ? {
+          lat: destinationMarker.getLatLng().lat,
+          lng: destinationMarker.getLatLng().lng,
+          name: destinationMarker.getPopup().getContent()
+        }
+      : null,
+    routeGeoJSON: routeLayer ? routeLayer.toGeoJSON() : null,
+    steps:       navigationSteps                           // ◎ 新增 steps
   };
   sessionStorage.setItem('mapState', JSON.stringify(state));
-  window.location.href = '/detect';})
+  window.location.href = '/detect';
+});
+
