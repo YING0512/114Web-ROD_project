@@ -26,19 +26,13 @@
     語音播報開啟中…
   </div>
 
-  <!-- 搜尋列：voiceNavBtn -->
+  <!-- 搜尋列：移除語音按鈕 -->
   <div id="search-bar" class="search-bar">
     <input type="text" id="searchInput" placeholder="搜尋地點…" />
     <button id="searchBtn">🔍</button>
-    <button id="voiceNavBtn">🎤</button>
   </div>
 
   <!-- 語音導航提示 -->
-  <div id="search-bar" class="search-bar">
-    <input type="text" id="searchInput" placeholder="搜尋地點…" />
-    <button id="searchBtn">🔍</button>
-  </div>
-
   <div id="navigationPrompt" style="display: none;" class="navigation-prompt">
     <div id="currentRoad">正在行駛：未知路段</div>
     <div id="nextInstruction">即將進入：未知道路</div>
@@ -49,8 +43,11 @@
     <div id="map"></div>
   </div>
 
+  <!-- 底部按鈕分為三等份，中間加入語音搜尋按鈕 -->
   <div class="split-buttons">
     <button class="half-btn" id="locateBtn">📍</button>
+    <div class="divider"></div>
+    <button class="half-btn" id="voiceNavBtn">🎤</button>
     <div class="divider"></div>
     <button class="half-btn" id="cameraBtn">📷</button>
   </div>

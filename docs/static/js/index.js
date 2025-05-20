@@ -10,8 +10,9 @@ const FRAME_THRESHOLD = 3;
 let lastSpeechTime    = 0;
 let movementCounter   = 0;
 let lastInstruction   = "";
-let navigationSteps = [];
-let positionCheck = null;
+let navigationSteps   = [];
+let positionCheck     = null;
+let isVoiceSelection  = false;  // 標記是否為語音選擇
 
 // ===== 搜尋結果資料與批次索引 =====
 let searchResultsData = [];
@@ -84,9 +85,12 @@ function handleSpeech(resultText) {
   }
 }
 
-// ===== 導航專用播報 =====
+// ===== 導航專用播報（不受冷卻限制） =====
 function speakNav(text) {
-  speak(text);
+  if (!speechEnabled) return;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'zh-TW';
+  speechSynthesis.speak(u);
 }
 
 // ===== 語音輸入辨識設定 =====
@@ -96,6 +100,7 @@ recognition.interimResults  = false;
 recognition.maxAlternatives = 1;
 
 // 按麥克風，停止朗讀並啟動辨識
+const voiceNavBtn = document.getElementById('voiceNavBtn');
 voiceNavBtn.addEventListener('click', () => {
   if (speechEnabled) speechSynthesis.cancel();
   recognition.start();
@@ -107,10 +112,10 @@ recognition.addEventListener('start', () => {
 });
 
 recognition.addEventListener('result', event => {
-  // 識別結果時停止朗讀
   speechSynthesis.cancel();
   const transcript = event.results[0][0].transcript.trim();
-  // 如果已有搜尋結果，則視為選擇或換批
+
+  // 已有搜尋結果：視為編號選擇或換批
   if (searchResultsData.length) {
     const numMap = {'一':1,'二':2,'三':3,'四':4,'五':5,'1':1,'2':2,'3':3,'4':4,'5':5};
     let sel = null;
@@ -118,6 +123,7 @@ recognition.addEventListener('result', event => {
     if (sel != null) {
       const idx = currentBatchStart + sel - 1;
       if (idx < searchResultsData.length) {
+        speakNav('正在導航到目的地');
         return handleDestinationSelect(searchResultsData[idx]);
       }
     }
@@ -126,15 +132,16 @@ recognition.addEventListener('result', event => {
       return displayBatch();
     }
   } else {
-    // 初次語音搜尋：播報搜尋中，再次點麥克風選擇
-    speak(`正在搜尋${transcript}，再次點擊語音說出編號可選擇導航`);
+    // 初次搜尋：播報提示
+    speak(`正在搜尋${transcript}，再次點擊語音並說出編號可設定導航`);
     document.getElementById('searchInput').value = transcript;
     searchResultsData = [];
     currentBatchStart = 0;
     document.getElementById('searchInput').dispatchEvent(new Event('input'));
     return;
   }
-  // 若未匹配到任何條件，則作文字輸入
+
+  // 無匹配：回填文字搜尋
   document.getElementById('searchInput').value = transcript;
   searchResultsData = [];
   currentBatchStart = 0;
@@ -289,10 +296,11 @@ function handleOrientation(event) {
 }
 
 // -------- 搜尋與導航 --------
-const searchInput = document.getElementById('searchInput');
+const searchInput      = document.getElementById('searchInput');
 const resultsContainer = document.getElementById('searchResults');
 let debounceTimer;
 
+// 文字輸入觸發搜尋
 searchInput.addEventListener('input', () => {
   const q = searchInput.value.trim();
   if (!q) return resultsContainer.innerHTML = '';
@@ -308,80 +316,91 @@ searchInput.addEventListener('input', () => {
   }, 300);
 });
 
+// ===== 顯示一批（最多 5 筆）並朗讀選項 =====
 function displayBatch() {
   resultsContainer.innerHTML = '';
-  const batch = searchResultsData.slice(currentBatchStart, currentBatchStart+5);
-  batch.forEach((p,i) => {
+  const batch = searchResultsData.slice(currentBatchStart, currentBatchStart + 5);
+  batch.forEach((p, i) => {
     const li = document.createElement('li');
     li.textContent = p.display_name;
     li.style.cursor = 'pointer';
     li.addEventListener('click', () => handleDestinationSelect(p));
     resultsContainer.appendChild(li);
   });
-  const names = batch.map((p,i) => `第${i+1}筆 ${p.display_name}`).join('；');
-  speak(`搜尋到${batch.length}筆：${names}`);
+  // 逐筆朗讀選項
+  const numerals = ['一','二','三','四','五'];
+  batch.forEach((p, i) => {
+    const u = new SpeechSynthesisUtterance(`${numerals[i]}，${p.display_name}`);
+    u.lang = 'zh-TW';
+    speechSynthesis.speak(u);
+  });
   speak('請說編號選擇或說下一組');
 }
 
-
 function handleDestinationSelect(place) {
   speechSynthesis.cancel();
+
   const lat = parseFloat(place.lat);
   const lon = parseFloat(place.lon);
-
   if (isNaN(lat) || isNaN(lon)) {
     alert("目的地座標有誤");
+    isVoiceSelection = false;
     return;
   }
 
+  // 設置標記並清除列表
   if (destinationMarker) map.removeLayer(destinationMarker);
   destinationMarker = L.marker([lat, lon]).addTo(map).bindPopup(place.display_name).openPopup();
   map.setView([lat, lon], 15);
   resultsContainer.innerHTML = '';
   searchInput.value = '';
 
-  if (!confirm("已選擇目的地，是否立即導航？")) return;
+  // 若非語音流程，保留手動確認
+  if (!isVoiceSelection) {
+    if (!confirm("已選擇目的地，是否立即導航？")) {
+      return;
+    }
+  }
 
   if (!userLocation || userLocation.length !== 2 || userLocation.some(isNaN)) {
-  alert("⚠️ 尚未取得有效的使用者位置，請先啟用定位功能再試一次。");
-  return;
-}
+    alert("⚠️ 尚未取得有效的使用者位置，請先啟用定位功能再試一次。");
+    isVoiceSelection = false;
+    return;
+  }
 
-
+  
   requestOrientationPermission();
 
   const startLon = userLocation[1];
   const startLat = userLocation[0];
-  const destLon = lon;
-  const destLat = lat;
-
+  const destLon  = lon;
+  const destLat  = lat;
   const url = `https://router.project-osrm.org/route/v1/driving/${startLon},${startLat};${destLon},${destLat}?overview=full&geometries=geojson&steps=true`;
 
-    fetch(url)
+  fetch(url)
     .then(res => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return res.json();
     })
     .then(data => {
-      if (!data || !data.routes || !data.routes.length) {
-        throw new Error("無有效路線資料");
+      const steps = data.routes[0].legs?.[0]?.steps || [];
+      navigationSteps = steps;
+      // 非語音流程再播報完整目的地名稱
+      if (!isVoiceSelection) {
+        speakNav(`正在導航到${place.display_name}`);
       }
-
-      const route = data.routes[0].geometry;
-      const steps = data.routes[0].legs?.[0]?.steps;
-      navigationSteps = steps;                                // ◎ 保存 steps
-      speakNav(`正在導航到${place.display_name}`);             // ◎ 播報目的地
-      if (steps && steps.length) showNavigationInstruction(steps);
+      if (steps.length) showNavigationInstruction(steps);
       isNavigating = true;
       updateUserLocation(userLocation[0], userLocation[1]);
       addCancelNavigationButton();
-        })
-        .catch((err) => {
-          console.error("路線規劃錯誤:", err);
-          alert("路線規劃錯誤");
-          // 即便規劃失敗，若畫面上已有路線，也要顯示【取消導航】按鈕
-          showNavigationPrompt();
-          addCancelNavigationButton();
+      isVoiceSelection = false;
+    })
+    .catch(err => {
+      console.error("路線規劃錯誤:", err);
+      alert("路線規劃錯誤");
+      showNavigationPrompt();
+      addCancelNavigationButton();
+      isVoiceSelection = false;
     });
 }
 
