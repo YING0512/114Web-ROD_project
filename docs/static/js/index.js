@@ -13,6 +13,9 @@ let lastInstruction   = "";
 let navigationSteps = [];
 let positionCheck = null;
 
+// ===== 搜尋結果資料與批次索引 =====
+let searchResultsData = [];
+let currentBatchStart = 0;
 
 // 切換語音開關
 speechBtn.addEventListener('click', toggleSpeech);
@@ -28,6 +31,7 @@ function toggleSpeech() {
     speechBtn.classList.add('off');
     speechBtn.classList.remove('on');
     speechBtn.title = '語音：關';
+    speechSynthesis.cancel();
   }
 }
 
@@ -60,8 +64,9 @@ speechInfoBtn.addEventListener('click', () => {
 
 // ===== 語音播報函式，加入冷卻時間 =====
 function speak(text) {
+  if (!speechEnabled) return;
   const now = Date.now();
-  if (!speechEnabled || now - lastSpeechTime < SPEECH_COOLDOWN) return;
+  if (now - lastSpeechTime < SPEECH_COOLDOWN) return;
   lastSpeechTime = now;
   const u = new SpeechSynthesisUtterance(text);
   u.lang = 'zh-TW';
@@ -78,6 +83,55 @@ function handleSpeech(resultText) {
     movementCounter = 0;
   }
 }
+
+// ===== 導航專用播報 =====
+function speakNav(text) {
+  speak(text);
+}
+
+// ===== 語音輸入辨識設定 =====
+const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+recognition.lang            = 'zh-TW';
+recognition.interimResults  = false;
+recognition.maxAlternatives = 1;
+
+// 按麥克風，停止朗讀並啟動辨識
+voiceNavBtn.addEventListener('click', () => {
+  if (speechEnabled) speechSynthesis.cancel();
+  recognition.start();
+});
+
+// 辨識開始時也停止朗讀
+recognition.addEventListener('start', () => {
+  if (speechEnabled) speechSynthesis.cancel();
+});
+
+recognition.addEventListener('result', event => {
+  // 識別結果時停止朗讀
+  speechSynthesis.cancel();
+  const transcript = event.results[0][0].transcript.trim();
+  // 若已有搜尋結果，試解析選項
+  if (searchResultsData.length) {
+    const numMap = {'一':1,'二':2,'三':3,'四':4,'五':5,'1':1,'2':2,'3':3,'4':4,'5':5};
+    let sel = null;
+    for (let k in numMap) if (transcript.includes(k)) { sel = numMap[k]; break; }
+    if (sel != null) {
+      const idx = currentBatchStart + sel - 1;
+      if (idx < searchResultsData.length) {
+        return handleDestinationSelect(searchResultsData[idx]);
+      }
+    }
+    if (/下|下一|再來/.test(transcript)) {
+      currentBatchStart += 5;
+      return displayBatch();
+    }
+  }
+  // 否則當文字搜尋
+  document.getElementById('searchInput').value = transcript;
+  searchResultsData = [];
+  currentBatchStart = 0;
+  document.getElementById('searchInput').dispatchEvent(new Event('input'));
+});
 
 // 初始化地圖
 const map = L.map('map').setView([22.999728, 120.227028], 13);
@@ -229,60 +283,40 @@ function handleOrientation(event) {
 // -------- 搜尋與導航 --------
 const searchInput = document.getElementById('searchInput');
 const resultsContainer = document.getElementById('searchResults');
-let debounceTimer = null;
-
-// ===== 語音輸入辨識設定 =====
-const voiceNavBtn     = document.getElementById('voiceNavBtn');
-const recognition     = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-
-recognition.lang         = 'zh-TW';
-recognition.interimResults= false;
-recognition.maxAlternatives= 1;
-
-voiceNavBtn.addEventListener('click', () => {
-  recognition.start();
-});
-
-recognition.addEventListener('result', (event) => {
-  const transcript = event.results[0][0].transcript;
-  searchInput.value = transcript;
-  searchInput.dispatchEvent(new Event('input'));
-});
-
-recognition.addEventListener('speechend', () => {
-  recognition.stop();
-});
-
-recognition.addEventListener('error', (event) => {
-  console.error('語音識別錯誤', event.error);
-  alert('語音識別錯誤：' + event.error);
-});
+let debounceTimer;
 
 searchInput.addEventListener('input', () => {
-  const query = searchInput.value.trim();
-  if (!query) return resultsContainer.innerHTML = '';
-
+  const q = searchInput.value.trim();
+  if (!q) return resultsContainer.innerHTML = '';
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
-    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`)
-      .then(res => res.json())
-      .then(data => {
-        resultsContainer.innerHTML = '';
-        if (!data.length) return resultsContainer.innerHTML = '<li>找不到地點</li>';
-
-        data.slice(0, 5).forEach(place => {
-          const li = document.createElement('li');
-          li.textContent = place.display_name;
-          li.style.cursor = 'pointer';
-          li.addEventListener('click', () => handleDestinationSelect(place));
-          resultsContainer.appendChild(li);
-        });
-      })
-      .catch(() => resultsContainer.innerHTML = '<li>搜尋錯誤</li>');
-  }, 300);
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}`)
+      .then(r=>r.json()).then(data=>{
+        searchResultsData = data;
+        currentBatchStart = 0;
+        displayBatch();
+      }).catch(()=>resultsContainer.innerHTML='<li>搜尋錯誤</li>');
+  },300);
 });
 
+function displayBatch() {
+  resultsContainer.innerHTML = '';
+  const batch = searchResultsData.slice(currentBatchStart, currentBatchStart+5);
+  batch.forEach((p,i)=>{
+    const li = document.createElement('li');
+    li.textContent = p.display_name;
+    li.style.cursor = 'pointer';
+    li.addEventListener('click', ()=>handleDestinationSelect(p));
+    resultsContainer.appendChild(li);
+  });
+  const names = batch.map((p,i)=>`第${i+1}筆 ${p.display_name}`).join('；');
+  speak(`搜尋到${batch.length}筆：${names}`);
+  speak('請說編號選擇或說下一組');
+}
+
+
 function handleDestinationSelect(place) {
+  speechSynthesis.cancel();
   const lat = parseFloat(place.lat);
   const lon = parseFloat(place.lon);
 
