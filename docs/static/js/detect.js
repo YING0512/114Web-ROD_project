@@ -69,7 +69,7 @@ speechInfoBtn.addEventListener('click', () => {
 
 // ===== 返回地圖 按鈕 行為 =====
 backBtn.addEventListener('click', () => {
-  window.location.href = '/';  // 導回首頁（地圖頁）
+  window.history.back();      // 返回上一頁，維持先前操作狀態
 });
 
 // ===== 繪製辨識遮罩 多邊形 =====

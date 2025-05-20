@@ -231,6 +231,33 @@ const searchInput = document.getElementById('searchInput');
 const resultsContainer = document.getElementById('searchResults');
 let debounceTimer = null;
 
+// ===== 語音輸入辨識設定 =====
+const voiceNavBtn     = document.getElementById('voiceNavBtn');
+const recognition     = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+
+recognition.lang         = 'zh-TW';
+recognition.interimResults= false;
+recognition.maxAlternatives= 1;
+
+voiceNavBtn.addEventListener('click', () => {
+  recognition.start();
+});
+
+recognition.addEventListener('result', (event) => {
+  const transcript = event.results[0][0].transcript;
+  searchInput.value = transcript;
+  searchInput.dispatchEvent(new Event('input'));
+});
+
+recognition.addEventListener('speechend', () => {
+  recognition.stop();
+});
+
+recognition.addEventListener('error', (event) => {
+  console.error('語音識別錯誤', event.error);
+  alert('語音識別錯誤：' + event.error);
+});
+
 searchInput.addEventListener('input', () => {
   const query = searchInput.value.trim();
   if (!query) return resultsContainer.innerHTML = '';
