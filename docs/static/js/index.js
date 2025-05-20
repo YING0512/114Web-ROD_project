@@ -110,7 +110,7 @@ recognition.addEventListener('result', event => {
   // 識別結果時停止朗讀
   speechSynthesis.cancel();
   const transcript = event.results[0][0].transcript.trim();
-  // 若已有搜尋結果，試解析選項
+  // 如果已有搜尋結果，則視為選擇或換批
   if (searchResultsData.length) {
     const numMap = {'一':1,'二':2,'三':3,'四':4,'五':5,'1':1,'2':2,'3':3,'4':4,'5':5};
     let sel = null;
@@ -125,8 +125,16 @@ recognition.addEventListener('result', event => {
       currentBatchStart += 5;
       return displayBatch();
     }
+  } else {
+    // 初次語音搜尋：播報搜尋中，再次點麥克風選擇
+    speak(`正在搜尋${transcript}，再次點擊語音說出編號可選擇導航`);
+    document.getElementById('searchInput').value = transcript;
+    searchResultsData = [];
+    currentBatchStart = 0;
+    document.getElementById('searchInput').dispatchEvent(new Event('input'));
+    return;
   }
-  // 否則當文字搜尋
+  // 若未匹配到任何條件，則作文字輸入
   document.getElementById('searchInput').value = transcript;
   searchResultsData = [];
   currentBatchStart = 0;
@@ -291,25 +299,26 @@ searchInput.addEventListener('input', () => {
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
     fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}`)
-      .then(r=>r.json()).then(data=>{
+      .then(r => r.json()).then(data => {
+        if (!data.length) return resultsContainer.innerHTML = '<li>找不到地點</li>';
         searchResultsData = data;
         currentBatchStart = 0;
         displayBatch();
-      }).catch(()=>resultsContainer.innerHTML='<li>搜尋錯誤</li>');
-  },300);
+      }).catch(() => resultsContainer.innerHTML = '<li>搜尋錯誤</li>');
+  }, 300);
 });
 
 function displayBatch() {
   resultsContainer.innerHTML = '';
   const batch = searchResultsData.slice(currentBatchStart, currentBatchStart+5);
-  batch.forEach((p,i)=>{
+  batch.forEach((p,i) => {
     const li = document.createElement('li');
     li.textContent = p.display_name;
     li.style.cursor = 'pointer';
-    li.addEventListener('click', ()=>handleDestinationSelect(p));
+    li.addEventListener('click', () => handleDestinationSelect(p));
     resultsContainer.appendChild(li);
   });
-  const names = batch.map((p,i)=>`第${i+1}筆 ${p.display_name}`).join('；');
+  const names = batch.map((p,i) => `第${i+1}筆 ${p.display_name}`).join('；');
   speak(`搜尋到${batch.length}筆：${names}`);
   speak('請說編號選擇或說下一組');
 }
