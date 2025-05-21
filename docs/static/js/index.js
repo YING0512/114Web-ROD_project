@@ -93,60 +93,6 @@ function speakNav(text) {
   speechSynthesis.speak(u);
 }
 
-// ===== 語音輸入辨識設定 =====
-const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-recognition.lang            = 'zh-TW';
-recognition.interimResults  = false;
-recognition.maxAlternatives = 1;
-
-// 按麥克風，停止朗讀並啟動辨識
-const voiceNavBtn = document.getElementById('voiceNavBtn');
-voiceNavBtn.addEventListener('click', () => {
-  if (speechEnabled) speechSynthesis.cancel();
-  recognition.start();
-});
-
-// 辨識開始時也停止朗讀
-recognition.addEventListener('start', () => {
-  if (speechEnabled) speechSynthesis.cancel();
-});
-
-recognition.addEventListener('result', event => {
-  speechSynthesis.cancel();
-  const transcript = event.results[0][0].transcript.trim();
-
-  // 已有搜尋結果：視為編號選擇或換批
-  if (searchResultsData.length) {
-    const numMap = {'一':1,'二':2,'三':3,'四':4,'五':5,'1':1,'2':2,'3':3,'4':4,'5':5};
-    let sel = null;
-    for (let k in numMap) if (transcript.includes(k)) { sel = numMap[k]; break; }
-    if (sel != null) {
-      const idx = currentBatchStart + sel - 1;
-      if (idx < searchResultsData.length) {
-        speakNav('正在導航到目的地');
-        return handleDestinationSelect(searchResultsData[idx]);
-      }
-    }
-    if (/下|下一|再來/.test(transcript)) {
-      currentBatchStart += 5;
-      return displayBatch();
-    }
-  } else {
-    // 初次搜尋：播報提示
-    speak(`正在搜尋${transcript}，再次點擊語音並說出編號可設定導航`);
-    document.getElementById('searchInput').value = transcript;
-    searchResultsData = [];
-    currentBatchStart = 0;
-    document.getElementById('searchInput').dispatchEvent(new Event('input'));
-    return;
-  }
-
-  // 無匹配：回填文字搜尋
-  document.getElementById('searchInput').value = transcript;
-  searchResultsData = [];
-  currentBatchStart = 0;
-  document.getElementById('searchInput').dispatchEvent(new Event('input'));
-});
 
 // 初始化地圖
 const map = L.map('map').setView([22.999728, 120.227028], 13);
@@ -295,15 +241,17 @@ function handleOrientation(event) {
   const mapEl = document.getElementById('map');
 }
 
-// -------- 搜尋與導航 --------
+// ===== 搜尋與導航 =====
 const searchInput      = document.getElementById('searchInput');
 const resultsContainer = document.getElementById('searchResults');
 let debounceTimer;
 
-// 文字輸入觸發搜尋
-searchInput.addEventListener('input', () => {
+// 文字輸入觸發搜尋（僅更新列表，不播報）
+searchInput.addEventListener('input', (event) => {
   const q = searchInput.value.trim();
   if (!q) return resultsContainer.innerHTML = '';
+  // 只有真正的鍵盤輸入會關閉語音流程
+  if (event.isTrusted) isVoiceSelection = false;
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
     fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}`)
@@ -316,7 +264,7 @@ searchInput.addEventListener('input', () => {
   }, 300);
 });
 
-// ===== 顯示一批（最多 5 筆）並朗讀選項 =====
+// ===== 顯示一批（最多 5 筆），語音播報僅限語音流程 =====
 function displayBatch() {
   resultsContainer.innerHTML = '';
   const batch = searchResultsData.slice(currentBatchStart, currentBatchStart + 5);
@@ -327,14 +275,15 @@ function displayBatch() {
     li.addEventListener('click', () => handleDestinationSelect(p));
     resultsContainer.appendChild(li);
   });
-  // 逐筆朗讀選項
-  const numerals = ['一','二','三','四','五'];
-  batch.forEach((p, i) => {
-    const u = new SpeechSynthesisUtterance(`${numerals[i]}，${p.display_name}`);
-    u.lang = 'zh-TW';
-    speechSynthesis.speak(u);
-  });
-  speak('請說編號選擇或說下一組');
+  if (isVoiceSelection) {
+    const numerals = ['一','二','三','四','五'];
+    batch.forEach((p, i) => {
+      const u = new SpeechSynthesisUtterance(`${numerals[i]}，${p.display_name}`);
+      u.lang = 'zh-TW';
+      speechSynthesis.speak(u);
+    });
+    speakNav('請說編號選擇或說下一組');
+  }
 }
 
 function handleDestinationSelect(place) {
