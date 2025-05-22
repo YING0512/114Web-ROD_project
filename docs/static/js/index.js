@@ -244,7 +244,7 @@ function handleOrientation(event) {
 // ===== 搜尋與導航 =====
 const searchInput      = document.getElementById('searchInput');
 const resultsContainer = document.getElementById('searchResults');
-let debounceTimer;
+let debounceTimer = null;
 
 // 文字輸入觸發搜尋（僅更新列表，不播報）
 searchInput.addEventListener('input', (event) => {
@@ -282,7 +282,7 @@ function displayBatch() {
       u.lang = 'zh-TW';
       speechSynthesis.speak(u);
     });
-    speakNav('請說編號選擇或說下一組');
+    speakNav('請說第幾筆選擇或說下一組');
   }
 }
 
