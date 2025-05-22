@@ -332,6 +332,12 @@ function handleDestinationSelect(place) {
       return res.json();
     })
     .then(data => {
+      // 畫出路線並縮放至範圍
+      const route = data.routes[0].geometry;
+      if (routeLayer) map.removeLayer(routeLayer);
+      routeLayer = L.geoJSON(route, { style: { color: 'blue', weight: 5 } }).addTo(map);
+      map.fitBounds(routeLayer.getBounds());
+
       const steps = data.routes[0].legs?.[0]?.steps || [];
       navigationSteps = steps;
       // 非語音流程再播報完整目的地名稱
