@@ -13,15 +13,24 @@ document.addEventListener('DOMContentLoaded', () => {
   const searchInput       = document.getElementById('searchInput');
   const resultsContainer  = document.getElementById('searchResults');
 
-  // 點擊麥克風按鈕，清空舊結果並提示語音輸入
+  // 點擊麥克風按鈕，依狀態觸發搜尋或選擇
   voiceNavBtn.addEventListener('click', () => {
-    isVoiceSelection      = true;
-    searchResultsData     = [];
-    currentBatchStart     = 0;
-    resultsContainer.innerHTML = '';
-    if (speechEnabled) speechSynthesis.cancel();
-    speakNav('請說要搜尋的地點');
-    recognition.start();
+    if (searchResultsData.length) {
+      // 已有搜尋結果 → 進入選擇模式
+      isVoiceSelection = true;
+      if (speechEnabled) speechSynthesis.cancel();
+      speakNav('請說編號選擇或說下一組');
+      recognition.start();
+    } else {
+      // 尚未搜尋 → 進入搜尋模式
+      isVoiceSelection      = true;
+      searchResultsData     = [];
+      currentBatchStart     = 0;
+      resultsContainer.innerHTML = '';
+      if (speechEnabled) speechSynthesis.cancel();
+      speakNav('請說要搜尋的地點');
+      recognition.start();
+    }
   });
 
   // 辨識開始時停止任何朗讀
