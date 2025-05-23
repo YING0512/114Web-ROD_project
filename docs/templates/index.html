@@ -45,12 +45,21 @@
 
   <!-- 底部按鈕分為三等份，中間加入語音搜尋按鈕 -->
   <div class="split-buttons">
-    <button class="half-btn" id="locateBtn">📍</button>
-    <div class="divider"></div>
-    <button class="half-btn" id="voiceNavBtn">🎤</button>
-    <div class="divider"></div>
-    <button class="half-btn" id="cameraBtn">📷</button>
-  </div>
+  <button class="half-btn" id="locateBtn">
+    📍
+    <span class="btn-text">定位</span>
+  </button>
+  <div class="divider"></div>
+  <button class="half-btn" id="voiceNavBtn">
+    🎤
+    <span class="btn-text">語音</span>
+  </button>
+  <div class="divider"></div>
+  <button class="half-btn" id="cameraBtn">
+    📷
+    <span class="btn-text">辨識</span>
+  </button>
+</div>
   <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;" />
 
   <!-- 載入語音模組，並初始化、播放提示 -->

@@ -144,7 +144,7 @@ body, html {
   z-index: 2;
 }
 
-/* 二分之一按鈕 */
+/* 三分之一按鈕 */
 .half-btn {
   flex: 1;
   display: flex;
@@ -162,6 +162,18 @@ body, html {
   background: #8f8f8f;
   height: 100%;
   align-self: center;
+}
+
+/* 讓底部三等分按鈕垂直排列 icon + 文字 */
+.split-buttons .half-btn {
+  flex-direction: column;
+}
+
+/* 按鈕文字 */
+.split-buttons .half-btn .btn-text {
+  margin-top: 8px;
+  font-size: 20px;
+  line-height: 1;
 }
 
 .leaflet-arrow-icon {
