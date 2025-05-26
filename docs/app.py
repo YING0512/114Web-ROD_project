@@ -20,6 +20,8 @@ MODEL_PATH = os.path.join(
 # 載入模型，準備推論
 model = YOLO(MODEL_PATH)
 
+STAIRS_CLASSES = {"stairs", "stair", "stairs_v2", "階梯"}
+
 @app.route("/", methods=["GET"])
 def index():
     """
@@ -57,25 +59,25 @@ def detect():
     safe_y1, safe_y2 = 0.5 * h, h        # 垂直安全範圍
 
     region = None  # 初始化檢測區域
+    text = ""
 
     # ---------- 優先檢查 stairs 類別 ----------
     for box, cls in zip(result.boxes.xyxy, result.boxes.cls):
-        if result.names[int(cls)] == "stairs":
-            # 算出框中心 x 座標
+        name = result.names[int(cls)].lower()
+        if name in STAIRS_CLASSES:
             cx = (box[0] + box[2]) / 2
-            # 根據中心位置判斷左、中、右
-            region = "左方" if cx < w / 3 else "右方" if cx > 2 * w / 3 else "前方"
+            region = "左方" if cx < w/3 else "右方" if cx > 2*w/3 else "前方"
             text = f"{region}台階 小心行走"
             break
 
     # ---------- 若未偵測到 stairs，檢查 obstacle ----------
     if region is None:
-        viol = None
         for box in result.boxes.xyxy:
-            cx = (box[0]+box[2])/2; cy = (box[1]+box[3])/2
-            if not (safe_x1<=cx<=safe_x2 and safe_y1<=cy<=safe_y2):
-                region = "左方" if cx<w/3 else "右方" if cx>2*w/3 else "前方"
-                if region=="左方":
+            cx = (box[0] + box[2]) / 2
+            cy = (box[1] + box[3]) / 2
+            if not (safe_x1 <= cx <= safe_x2 and safe_y1 <= cy <= safe_y2):
+                region = "左方" if cx < w/3 else "右方" if cx > 2*w/3 else "前方"
+                if region == "左方":
                     text = "左方障礙物  靠右行走"
                 elif region == "右方":
                     text = "右方障礙物  靠左行走"
