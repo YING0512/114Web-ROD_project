@@ -12,7 +12,7 @@ const notice        = document.getElementById('speechNotice');
 
 // ===== 語音播報參數設定 =====
 let speechEnabled    = true;    // TODO: 預設語音為「開」
-const SPEECH_COOLDOWN = 10000;    // 語音最短間隔：10 秒鐘
+const SPEECH_COOLDOWN = 5000;    // 語音最短間隔：5 秒鐘
 const FRAME_THRESHOLD = 3;       // 當同一結果連續出現的幀數門檻
 let lastSpeechTime   = 0;        // 上次播報時間戳
 let movementCounter  = 0;        // 連續相同結果計數器
@@ -98,16 +98,12 @@ function speak(text) {
 
 // 幀門檻 + 重複過濾，避免連續重複播報
 function handleSpeech(resultText) {
-  const now = Date.now();
-  if (resultText !== lastMovement) {
-    // 不同結果 → 立即播報
+  if (resultText === lastMovement) return;  // 相同文字則跳過
+  movementCounter++;
+  if (movementCounter >= FRAME_THRESHOLD) {
     speak(resultText);
     lastMovement    = resultText;
-    lastSpeechTime  = now;
-  } else if (now - lastSpeechTime >= SPEECH_COOLDOWN) {
-    // 相同結果且已過 5 秒 → 再次播報
-    speak(resultText);
-    lastSpeechTime = now;
+    movementCounter = 0;
   }
 }
 
