@@ -21,6 +21,7 @@
       <i class="fa-solid fa-circle-info"></i>
     </button>
   </div>
+
   <!-- ====== 語音播報提示 ====== -->
   <div id="speechNotice" class="speech-notice" style="display:none;">
     語音播報開啟中…
@@ -38,40 +39,41 @@
     <div id="nextInstruction">即將進入：未知道路</div>
   </div>
 
+  <!-- 搜尋結果 -->
   <ul id="searchResults" class="search-results"></ul>
+
+  <!-- 地圖容器 -->
   <div id="map-container">
     <div id="map"></div>
   </div>
 
-  <!-- 底部按鈕分為三等份，中間加入語音搜尋按鈕 -->
   <div class="split-buttons">
-  <button class="half-btn" id="locateBtn">
-    📍
-    <span class="btn-text">定位</span>
-  </button>
-  <div class="divider"></div>
-  <button class="half-btn" id="voiceNavBtn">
-    🎤
-    <span class="btn-text">語音</span>
-  </button>
-  <div class="divider"></div>
-  <button class="half-btn" id="cameraBtn">
-    📷
-    <span class="btn-text">辨識</span>
-  </button>
-</div>
+    <button class="half-btn" id="locateBtn">
+      📍
+      <span class="btn-text">定位</span>
+    </button>
+    <div class="divider"></div>
+    <button class="half-btn" id="voiceNavBtn">
+      🎤
+      <span class="btn-text">語音</span>
+    </button>
+    <div class="divider"></div>
+    <button class="half-btn" id="cameraBtn">
+      📷
+      <span class="btn-text">辨識</span>
+    </button>
+  </div>
+
+  <!-- 相機 input -->
   <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;" />
 
-  <!-- 載入語音模組，並初始化、播放提示 -->
+  <!-- JS 載入 -->
   <script src="{{ url_for('static', filename='js/speech.js') }}"></script>
   <script src="{{ url_for('static', filename='js/voiceNav.js') }}"></script>
   <script>
-    // initSpeech 會註冊三連擊切換、檢查支援
     initSpeech();
-    // 確保一進到頁面就播報
     speakNav("語音播報開啟中…");
   </script>
-  <!-- 再載入地圖主要邏輯 -->
   <script src="{{ url_for('static', filename='js/index.js') }}"></script>
 </body>
 </html>

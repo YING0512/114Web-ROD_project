@@ -9,6 +9,8 @@ body, html {
   height: 100%;
   font-family: sans-serif;
   background: #f0f0f0;
+  margin: 0;
+  padding: 0;
 }
 
 .app-container {
@@ -135,13 +137,20 @@ body, html {
 }
 
 /* 底部左右分割按鈕容器 */
+/* 改成浮動樣式按鈕列 */
 .split-buttons {
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  height: 160px;
+  position: fixed;
+  bottom: 30px;           /* 與下方距離 */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  height: 120px;
   display: flex;
-  z-index: 2;
+  z-index: 2000;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.3); /* 陰影右下角 */
+  overflow: hidden;
 }
 
 /* 三分之一按鈕 */
@@ -150,7 +159,7 @@ body, html {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 60px;
+  font-size: 40px;
   background: #fff;
   border: none;
   cursor: pointer;
