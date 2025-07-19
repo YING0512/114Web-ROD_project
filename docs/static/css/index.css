@@ -139,7 +139,7 @@ body, html {
 /* 底部左右分割按鈕容器 */
 /* 改成浮動樣式按鈕列 */
 .split-buttons {
-  position: fixed;
+  position: absolute;
   bottom: 30px;           /* 與下方距離 */
   left: 50%;
   transform: translateX(-50%);
