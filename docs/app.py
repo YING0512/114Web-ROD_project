@@ -13,7 +13,7 @@ MODEL_PATH = os.path.join(
     os.path.dirname(__file__),  # 目前 app.py 所在資料夾
     "..",                     # 上層資料夾
     "SeniorRod",              # 專案資料夾名稱
-    "yolov11_v4",             # 模型資料夾
+    "yolov11_v8",             # 模型資料夾
     "weights",                # 權重資料夾
     "best.pt"                 # 權重檔案
 )

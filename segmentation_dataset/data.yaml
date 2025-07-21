@@ -1,0 +1,14 @@
+names:
+- Road-Object
+- floor
+- people
+nc: 3
+roboflow:
+  license: CC BY 4.0
+  project: senior-project-rod
+  url: https://universe.roboflow.com/ying-ijjie/senior-project-rod/dataset/8
+  version: 8
+  workspace: ying-ijjie
+test: ../test/images
+train: ../train/images
+val: ../valid/images
