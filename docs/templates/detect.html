@@ -37,39 +37,34 @@
 
     <!-- 相機與遮罩畫面容器 -->
     <div class="camera-container">
+      <!-- 小型返回按鈕：左上角 -->
+      <button id="backBtn" class="back-btn-floating">
+        <i class="fa-solid fa-map-location-dot"></i> 返回地圖
+      </button>
+
       <!-- 直播視訊元素 -->
       <video id="video" autoplay muted></video>
+
       <!-- 偵測結果畫框（Canvas） -->
       <canvas id="overlay"></canvas>
     </div>
 
     <!-- 辨識結果顯示框 -->
     <div class="result-box">
-      <!-- 標籤文字 -->
       <div class="result-label">辨識結果：</div>
-      <!-- 偵測到的結果內容會寫入此處 -->
       <div id="result" class="result-content"></div>
     </div>
 
-    <!-- 功能列：返回地圖、導航提示、小地圖 -->
-    <div class="output-container">
-      <!-- 返回地圖按鈕：圖示置上、文字置下、置中 -->
-      <button id="backBtn" class="back-btn">
-        <i class="fa-solid fa-map-location-dot fa-2x"></i>
-        <span class="btn-text">返回地圖</span>
-      </button>
+    <!-- 保留區：放置縮小地圖（miniMap） -->
+      <div class="reserved-area">
+        <div id="miniMap" class="mini-map"></div>
 
       <!-- 導航提示區（預設隱藏） -->
       <div id="navigationPrompt" style="display:none;" class="navigation-prompt">
-        <!-- 當前行駛路段 -->
         <div id="currentRoad">正在行駛：未知路段</div>
-        <!-- 下一步導航指示 -->
         <div id="nextInstruction">即將進入：未知道路</div>
       </div>
 
-      <!-- 保留區：放置縮小地圖（miniMap） -->
-      <div class="reserved-area">
-        <div id="miniMap" class="mini-map"></div>
       </div>
     </div>
 
