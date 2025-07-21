@@ -19,11 +19,12 @@
   <div class="app-container">
     <!-- 語音控制區塊：固定於右上角 -->
     <div class="speech-controls" style="position:fixed; top:10px; right:10px; z-index:10000;">
-      <!-- 語音開關按鈕 -->
-      <button id="speechToggle" class="speech-btn on" title="語音：開">
-        <!-- 音量圖示，動態切換 on/off -->
-        <i id="speechIcon" class="fa-solid fa-volume-high"></i>
-      </button>
+      <!-- 替換成 checkbox 樣式開關 -->
+      <label class="speech-btn" title="語音開關">
+        <input type="checkbox" id="speechToggle" checked>
+        <span class="slider"></span>
+      </label>
+
       <!-- 語音操作說明按鈕（資訊 i） -->
       <button id="speechInfo" class="speech-info-btn" title="語音操作說明">
         <i class="fa-solid fa-circle-info"></i>

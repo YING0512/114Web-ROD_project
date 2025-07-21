@@ -13,14 +13,15 @@
 </head>
 <body>
   <!-- ===== 語音開關 & 資訊 ===== -->
-  <div class="speech-controls" style="position:fixed; top:10px; right:10px; z-index:1001;">
-    <button id="speechToggle" class="speech-btn on" title="語音：開">
-      <i id="speechIcon" class="fa-solid fa-volume-high"></i>
-    </button>
-    <button id="speechInfo" class="speech-info-btn" title="語音操作說明">
-      <i class="fa-solid fa-circle-info"></i>
-    </button>
-  </div>
+<div class="speech-controls" style="position:fixed; top:10px; right:10px; z-index:1001;">
+  <label class="speech-btn" title="語音開關">
+    <input type="checkbox" id="speechToggle" checked>
+    <span class="slider"></span>
+  </label>
+  <button id="speechInfo" class="speech-info-btn" title="語音操作說明">
+    <i class="fa-solid fa-circle-info"></i>
+  </button>
+</div>
 
   <!-- ====== 語音播報提示 ====== -->
   <div id="speechNotice" class="speech-notice" style="display:none;">
