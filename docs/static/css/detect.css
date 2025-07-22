@@ -29,22 +29,47 @@
 }
 
 /* ====================================================================
-   語音開關按鈕
+   語音開關按鈕 - 改為滑動開關樣式
    ==================================================================== */
 .speech-btn {
-  height: 40px;
-  width: 60px;
-  border: 1px solid #00000088;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background 0.2s;
+  position: relative;
+  display: inline-block;
+  width: 70px;
+  height: 28px;
 }
-.speech-btn.on  { background: #4caf50; }
-.speech-btn.off { background: #f44336; }
-.speech-btn i   { font-size: 20px; color: #fff; }
+.speech-btn input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.speech-btn .slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: 0.4s;
+  border-radius: 34px;
+}
+.speech-btn .slider::before {
+  position: absolute;
+  content: "";
+  height: 22px;
+  width: 22px;
+  left: 4px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+.speech-btn input:checked + .slider {
+  background-color: #4caf50;
+}
+.speech-btn input:checked + .slider::before {
+  transform: translateX(13px);
+}
 
 /* ====================================================================
    語音控制區 & 說明按鈕
