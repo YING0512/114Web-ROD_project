@@ -48,8 +48,19 @@ def detect():
 
     # 使用 YOLO 模型進行推論，取得第一筆結果物件資訊
     result = model(img)[0]
-    # 取得邊界框座標列表，用於前端繪製遮罩
-    xyxy = result.boxes.xyxy.cpu().numpy().tolist()
+
+    # 回傳用的標註框資訊（加上類別與信心分數）
+    boxes_info = []
+    for box, cls, conf in zip(result.boxes.xyxy, result.boxes.cls, result.boxes.conf):
+        x1, y1, x2, y2 = box.cpu().numpy().tolist()
+        label = result.names[int(cls)]
+        score = float(conf)
+        boxes_info.append({
+            "x1": x1, "y1": y1,
+            "x2": x2, "y2": y2,
+            "label": label,
+            "score": round(score, 2)
+        })
 
     # 取得影像尺寸，用以定義安全區域
     h, w = img.shape[:2]
@@ -58,9 +69,9 @@ def detect():
 
     region = None  # 初始化檢測區域
 
-    # ---------- 優先檢查 stairs 類別 ----------
+    # ---------- 優先檢查 floor 類別 ----------
     for box, cls in zip(result.boxes.xyxy, result.boxes.cls):
-        if result.names[int(cls)] == "stairs":
+        if result.names[int(cls)] == "floor":
             # 算出框中心 x 座標
             cx = (box[0] + box[2]) / 2
             # 根據中心位置判斷左、中、右
@@ -68,7 +79,7 @@ def detect():
             text = f"{region}台階 小心行走"
             break
 
-    # ---------- 若未偵測到 stairs，檢查 obstacle ----------
+    # ---------- 若未偵測到 floor，檢查 obstacle ----------
     if region is None:
         viol = None
         for box in result.boxes.xyxy:
@@ -89,7 +100,7 @@ def detect():
 
     # 回傳 JSON，包含遮罩座標與文字提示
     return jsonify({
-        "boxes": xyxy,
+        "boxes": boxes_info,
         "result": text
     })
 

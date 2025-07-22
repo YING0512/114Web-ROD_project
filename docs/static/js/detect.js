@@ -86,6 +86,27 @@ function drawMasks(masks) {
   });
 }
 
+function drawBoxes(boxes) {
+  ctx.clearRect(0, 0, overlay.width, overlay.height);
+  ctx.strokeStyle = 'lime';
+  ctx.lineWidth = 2;
+  ctx.font = "16px Arial";
+  ctx.fillStyle = "rgba(0,0,0,0.5)";
+  ctx.textBaseline = "top";
+
+  boxes.forEach(box => {
+    const { x1, y1, x2, y2, label, score } = box;
+    ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+    const tag = `${label} ${Math.round(score * 100)}%`;
+    const textWidth = ctx.measureText(tag).width;
+    ctx.fillRect(x1, y1 - 20, textWidth + 6, 20);
+    ctx.fillStyle = "#fff";
+    ctx.fillText(tag, x1 + 3, y1 - 20 + 3);
+    ctx.fillStyle = "rgba(0,0,0,0.5)";
+  });
+}
+
+
 // ===== 語音播報函式（含冷卻時間控制） =====
 function speak(text) {
   const now = Date.now();
@@ -134,10 +155,10 @@ navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image: dataUrl })
       });
-      const { masks, result } = await res.json();
+    const { boxes, result } = await res.json();
 
       // 繪製遮罩並顯示文字結果
-      if (masks && masks.length) drawMasks(masks);
+    if (boxes && boxes.length) drawBoxes(boxes);
       resultEl.innerText = result;
       handleSpeech(result);
     }, 1000);
