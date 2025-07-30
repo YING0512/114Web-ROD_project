@@ -142,6 +142,14 @@ navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
     cam.style.height = `${video.videoHeight * (cam.clientWidth / video.videoWidth)}px`;
     cam.classList.add('fixed');
 
+    const loader = document.getElementById('loader-wrapper');
+    if (loader) {
+      loader.classList.add('fade-out');
+      setTimeout(() => {
+        loader.remove();
+      }, 2000);
+    }
+
     // 每秒擷取影像並傳給 /detect API
     setInterval(async () => {
       const tmp = document.createElement('canvas');

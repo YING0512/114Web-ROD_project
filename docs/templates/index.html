@@ -12,6 +12,12 @@
   <script src="{{ url_for('static', filename='leaflet/leaflet.js') }}"></script>
 </head>
 <body>
+  <div id="loader-wrapper">
+  <div class="loader-content">
+    <div class="spinner"></div>
+    <div class="loading-text">loading...</div>
+  </div>
+</div>
   <!-- ===== 語音開關 & 資訊 ===== -->
 <div class="speech-controls" style="position:fixed; top:10px; right:10px; z-index:1001;">
   <label class="speech-btn" title="語音開關">

@@ -502,3 +502,14 @@ document.getElementById('cameraBtn').addEventListener('click', () => {
   window.location.href = '/detect';
 });
 
+
+// ===== 頁面載入完成後淡出載入畫面 =====
+window.addEventListener('load', function () {
+  const loader = document.getElementById('loader-wrapper');
+  if (loader) {
+    loader.classList.add('fade-out');
+    setTimeout(() => {
+      loader.remove();
+    }, 2000);
+  }
+});
