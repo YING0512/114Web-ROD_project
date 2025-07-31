@@ -334,7 +334,10 @@ function handleDestinationSelect(place) {
     .then(data => {
       // 畫出路線並縮放至範圍
       const route = data.routes[0].geometry;
-      if (routeLayer) map.removeLayer(routeLayer);
+      if (routeLayer) {
+        map.removeLayer(routeLayer);
+        routeLayer = null;
+      }
       routeLayer = L.geoJSON(route, { style: { color: 'blue', weight: 5 } }).addTo(map);
       map.fitBounds(routeLayer.getBounds());
 
@@ -388,6 +391,7 @@ function addCancelNavigationButton() {
 
   if (userMarker) {
     map.removeLayer(userMarker);
+    destinationMarker = null;
     userMarker = L.marker(userLocation, { icon: createDefaultMarkerIcon() })
       .addTo(map).bindPopup("您的位置").openPopup();
   }
@@ -411,6 +415,7 @@ function addCancelNavigationButton() {
   
   document.getElementById('currentRoad').textContent = '';
   document.getElementById('nextInstruction').textContent = '';
+  document.getElementById('navigationPrompt').style.display = 'none';
 });
   navBox.appendChild(cancelBtn); 
 }
