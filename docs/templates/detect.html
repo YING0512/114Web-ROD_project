@@ -24,7 +24,6 @@
     <div class="loading-text">loading...</div>
     </div>
   </div>
-
     <!-- 語音控制 -->
     <div class="speech-controls" style="position:fixed; top:10px; right:10px; z-index:10000;">
       <label class="speech-btn" title="語音開關">
@@ -44,21 +43,15 @@
 
     <!-- 相機與畫面 -->
     <div class="camera-container">
-      <button id="backBtn" class="back-btn-floating">
-        <i class="fa-solid fa-map-location-dot"></i> 返回地圖
-      </button>
       <video id="video" autoplay muted></video>
-      <canvas id="overlay"></canvas>
+      <canvas id="overlay"></canvas>     
     </div>
-
+    
     <!-- 辨識結果 -->
     <div class="result-box">
       <div class="result-label">辨識結果：</div>
       <div id="result" class="result-content"></div>
     </div>
-
-    <!-- 地圖顯示區 -->
-    <div id="miniMap" class="mini-map"></div>
 
     <!-- 導航提示 -->
     <div id="navigationPrompt" class="navigation-prompt" style="display:none;">
@@ -66,8 +59,20 @@
       <div id="nextInstruction">即將進入：未知道路</div>
     </div>
 
+    <!-- 地圖顯示區 -->
+    <div id="miniMap" class="mini-map"></div>
+    <div class="split-buttons">
+    <button class="half-btn" id="voiceCommandBtn">
+      🎤
+      <span class="btn-text">語音</span>
+    </button>
+    <div class="divider"></div>
+    <button class="half-btn" id="mapBtn">
+      🗺️
+      <span class="btn-text">地圖</span>
+    </button>
   </div>
-
+  
   <!-- 載入腳本 -->
   <script src="{{ url_for('static', filename='leaflet/leaflet.js') }}"></script>
   <script src="{{ url_for('static', filename='js/speech.js') }}"></script>

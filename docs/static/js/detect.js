@@ -9,6 +9,8 @@ const speechIcon    = document.getElementById('speechIcon');
 const backBtn       = document.getElementById('backBtn');
 const speechInfoBtn = document.getElementById('speechInfo');
 const notice        = document.getElementById('speechNotice');
+const mapBtn = document.getElementById('mapBtn');
+const voiceBtn = document.getElementById('voiceCommandBtn');
 
 // ===== 語音播報參數設定 =====
 let speechEnabled    = true;    // TODO: 預設語音為「開」
@@ -66,8 +68,37 @@ speechInfoBtn.addEventListener('click', () => {
 });
 
 // ===== 返回地圖 按鈕 行為 =====
-backBtn.addEventListener('click', () => {
-  window.history.back();      // 返回上一頁，維持先前操作狀態
+// backBtn.addEventListener('click', () => {
+//   window.history.back();      // 返回上一頁，維持先前操作狀態
+// });
+
+mapBtn.addEventListener('click', () => {
+  window.history.back();
+});
+
+// 語音辨識：若說出「地圖」則觸發 mapBtn
+voiceBtn.addEventListener('click', () => {
+  const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+  recognition.lang = 'zh-TW';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  recognition.start();
+  speakNav("請說出指令，例如：地圖");
+
+  recognition.addEventListener('result', (event) => {
+    const transcript = event.results[0][0].transcript.trim();
+    if (/地圖/.test(transcript)) {
+      speakNav("正在返回地圖");
+      mapBtn.click();
+    } else {
+      speakNav("未識別的語音指令");
+    }
+  });
+
+  recognition.addEventListener('error', (e) => {
+    console.error("語音辨識錯誤", e.error);
+  });
 });
 
 // ===== 繪製辨識遮罩 多邊形 =====
