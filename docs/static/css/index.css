@@ -24,7 +24,7 @@ body, html {
 #map-container {
   position: relative;
   width: 100%;
-  height: calc(100vh - 160px); /* 與 #map 一樣高 */
+  height: 100vh; /* 改成整個視口高 */
   overflow: hidden;
 }
 
@@ -42,9 +42,9 @@ body, html {
 /* 搜尋列 */
 .search-bar {
   position: absolute;
-  top: 10px;
+  top: 15px;
   left: 50px;
-  right: 85px;
+  right: 65px;
   display: flex;
   z-index: 1000;
   background: rgba(255, 255, 255, 0.9);
@@ -99,9 +99,8 @@ body, html {
   position: absolute;
   top: 60px;
   left: 50px;
-  right: 65px;
+  right: 85px;
   background: white;
-  border: 1px solid #ccc;
   border-radius: 10px;
   max-height: 200px;
   overflow-y: auto;
@@ -127,7 +126,7 @@ body, html {
   color: white;
   font-weight: bold;
   border: none;
-  border-radius: 0 0 10px 10px;
+  border-radius: 10px 10px 10px 10px;
   cursor: pointer;
   font-size: 16px;
   margin-top: 12px;
@@ -140,7 +139,7 @@ body, html {
 /* 改成浮動樣式按鈕列 */
 .split-buttons {
   position: absolute;
-  bottom: 30px;           /* 與下方距離 */
+  bottom: 20px;           /* 與下方距離 */
   left: 50%;
   transform: translateX(-50%);
   width: 90%;

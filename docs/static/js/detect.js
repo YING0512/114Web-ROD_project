@@ -4,7 +4,7 @@ const video         = document.getElementById('video');
 const overlay       = document.getElementById('overlay');
 const ctx           = overlay.getContext('2d');
 const resultEl      = document.getElementById('result');
-const speechBtn     = document.getElementById('speechToggle');
+const speechToggle = document.getElementById('speechToggle');
 const speechIcon    = document.getElementById('speechIcon');
 const backBtn       = document.getElementById('backBtn');
 const speechInfoBtn = document.getElementById('speechInfo');
@@ -19,48 +19,46 @@ let movementCounter  = 0;        // 連續相同結果計數器
 let lastMovement     = "";       // 上次播報內容
 
 // ===== 語音開關按鈕 點擊處理 =====
-speechBtn.addEventListener('click', toggleSpeech);
-function toggleSpeech() {
-  speechEnabled = !speechEnabled;  // 切換狀態
-  if (speechEnabled) {
-    // 開啟語音：圖示 + 樣式 + title
+speechToggle.addEventListener('change', () => {
+  if (speechToggle.checked) {
     speechIcon.className = 'fa-solid fa-volume-high';
-    speechBtn.classList.add('on');
-    speechBtn.classList.remove('off');
-    speechBtn.title = '語音：開';
+    speechToggle.title = '語音：開';
+    speechEnabled = true;
   } else {
-    // 關閉語音：圖示 + 樣式 + title
     speechIcon.className = 'fa-solid fa-volume-xmark';
-    speechBtn.classList.add('off');
-    speechBtn.classList.remove('on');
-    speechBtn.title = '語音：關';
-  }
-}
-
-// ===== 三連擊全頁 切換語音 =====
-// 便於單手操作：連續點擊 3 下便觸發 toggleSpeech()
-let clicks = 0, clickTimer;
-document.body.addEventListener('click', () => {
-  clicks++;
-  if (clicks === 1) {
-    // 首次點擊後啟動計時器，600ms 內若未三擊則重置
-    clickTimer = setTimeout(() => { clicks = 0; }, 600);
-  } else if (clicks === 3) {
-    // 三擊完成，清除計時器並切換語音
-    clearTimeout(clickTimer);
-    clicks = 0;
-    toggleSpeech();
+    speechToggle.title = '語音：關';
+    speechEnabled = false;
   }
 });
 
 // ===== 進入頁面時 顯示「語音開啟中…」提示 =====
 window.addEventListener('DOMContentLoaded', () => {
+
+  // ===== 三連擊全頁 切換語音 =====
+// 便於單手操作：連續點擊 3 下便觸發 toggleSpeech()
+let clicks = 0, clickTimer;
+document.body.addEventListener('click', (e) => {
+  if (e.target.closest('#speechToggle')) return;
+  clicks++;
+  if (clicks === 1) {
+    // 首次點擊後啟動計時器，600ms 內若未三擊則重置
+    clickTimer = setTimeout(() => { clicks = 0; }, 800);
+  } else if (clicks === 3) {
+    // 三擊完成，清除計時器並切換語音
+    clearTimeout(clickTimer);
+    clicks = 0;
+    speechToggle.checked = !speechToggle.checked;
+    speechToggle.dispatchEvent(new Event('change'));
+  }
+});
+
   if (speechEnabled) {
     notice.style.display = 'block';              // 顯示提示文字
     setTimeout(() => { notice.style.display = 'none'; }, 3000);  // 3 秒後隱藏
     speak("語音播報開啟中...");                  // 立即播報一次
   }
 });
+
 
 // ===== 語音操作資訊 按鈕 =====
 speechInfoBtn.addEventListener('click', () => {

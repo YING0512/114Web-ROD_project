@@ -117,7 +117,7 @@
   position: relative;
   width: 100%;
   max-width: 480px;
-  margin: 50px auto 0;
+  margin: 10px auto 0;
   background: #000;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
@@ -293,10 +293,22 @@
    響應式設計（手機）
    ==================================================================== */
 @media screen and (max-width: 768px) {
-  .camera-container,
+  .camera-container {
+    height: 300px !important; /* 與 .mini-map 相同 */
+  }
+
+  .camera-container video,
+  .camera-container canvas {
+    height: 100% !important;
+    object-fit: cover;
+  }
+
+  .mini-map {
+    height: 300px !important;
+  }
+
   .result-box {
-    width: 100%;
-    max-width: 100%;
-    margin: 0 auto;
+    height: 60px; /* 保持原狀 */
   }
 }
+
