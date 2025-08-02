@@ -36,7 +36,7 @@ speechToggle.addEventListener('change', () => {
 // ===== 進入頁面時 顯示「語音開啟中…」提示 =====
 window.addEventListener('DOMContentLoaded', () => {
 
-  // ===== 三連擊全頁 切換語音 =====
+// ===== 三連擊全頁 切換語音 =====
 // 便於單手操作：連續點擊 3 下便觸發 toggleSpeech()
 let clicks = 0, clickTimer;
 document.body.addEventListener('click', (e) => {

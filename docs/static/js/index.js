@@ -18,34 +18,34 @@ let isVoiceSelection  = false;  // 標記是否為語音選擇
 let searchResultsData = [];
 let currentBatchStart = 0;
 
-// 切換語音開關
-speechBtn.addEventListener('click', toggleSpeech);
-function toggleSpeech() {
-  speechEnabled = !speechEnabled;
-  if (speechEnabled) {
+// ===== 語音開關按鈕 點擊處理 =====
+speechToggle.addEventListener('change', () => {
+  if (speechToggle.checked) {
     speechIcon.className = 'fa-solid fa-volume-high';
-    speechBtn.classList.add('on');
-    speechBtn.classList.remove('off');
-    speechBtn.title = '語音：開';
+    speechToggle.title = '語音：開';
+    speechEnabled = true;
   } else {
     speechIcon.className = 'fa-solid fa-volume-xmark';
-    speechBtn.classList.add('off');
-    speechBtn.classList.remove('on');
-    speechBtn.title = '語音：關';
-    speechSynthesis.cancel();
+    speechToggle.title = '語音：關';
+    speechEnabled = false;
   }
-}
+});
 
-// 三連擊切換（單手操作）
+// ===== 三連擊全頁 切換語音 =====
+// 便於單手操作：連續點擊 3 下便觸發 toggleSpeech()
 let clicks = 0, clickTimer;
-document.body.addEventListener('click', () => {
+document.body.addEventListener('click', (e) => {
+  if (e.target.closest('#speechToggle')) return;
   clicks++;
   if (clicks === 1) {
-    clickTimer = setTimeout(() => { clicks = 0; }, 600);
+    // 首次點擊後啟動計時器，600ms 內若未三擊則重置
+    clickTimer = setTimeout(() => { clicks = 0; }, 800);
   } else if (clicks === 3) {
+    // 三擊完成，清除計時器並切換語音
     clearTimeout(clickTimer);
     clicks = 0;
-    toggleSpeech();
+    speechToggle.checked = !speechToggle.checked;
+    speechToggle.dispatchEvent(new Event('change'));
   }
 });
 
