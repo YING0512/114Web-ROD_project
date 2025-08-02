@@ -18,27 +18,30 @@
     <div class="loading-text">loading...</div>
   </div>
 </div>
-  <!-- ===== 語音開關 & 資訊 ===== -->
-<div class="speech-controls" style="position:fixed; top:10px; right:10px; z-index:1001; display:flex; flex-direction:column; align-items:flex-end;">
-  <button id="speechInfo" class="speech-info-btn" title="語音操作說明" style="margin-bottom:8px;">
-    <i class="fa-solid fa-circle-info"></i>
-  </button>
-  <label class="speech-btn" title="語音開關">
-    <input type="checkbox" id="speechToggle" checked>
-    <span class="slider"></span>
-    <i id="speechIcon" class="fa-solid fa-volume-high"></i> 
-  </label>
-</div>
-
-  <!-- ====== 語音播報提示 ====== -->
-  <div id="speechNotice" class="speech-notice" style="display:none;">
-    語音播報開啟中…
-  </div>
-
-  <!-- 搜尋列：移除語音按鈕 -->
+<!-- 搜尋列：移除語音按鈕 -->
   <div id="search-bar" class="search-bar">
     <input type="text" id="searchInput" placeholder="搜尋地點…" />
     <button id="searchBtn">🔍</button>
+  </div>
+  
+  <!-- ===== 語音開關 & 資訊 ===== -->
+  <!-- ===== 語音開關按鈕 ===== -->
+    <div class="speech-toggle" style="position:fixed; top:25px; right:50px; z-index:1001;">
+      <label class="speech-btn" title="語音開關">
+        <input type="checkbox" id="speechToggle" checked>
+        <span class="slider"></span>
+        <i id="speechIcon" class="fa-solid fa-volume-high"></i> 
+      </label>
+    </div>
+  <!-- ===== 語音說明按鈕 ===== -->
+  <div class="speech-info" style="position:fixed; top:25px; right:10px; z-index:1001;">
+    <button id="speechInfo" class="speech-info-btn" title="語音操作說明">
+      <i class="fa-solid fa-circle-info"></i>
+    </button>
+  </div>
+  <!-- ====== 語音播報提示 ====== -->
+  <div id="speechNotice" class="speech-notice" style="display:none;">
+    語音播報開啟中…
   </div>
 
   <!-- 語音導航提示 -->
