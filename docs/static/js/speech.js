@@ -78,10 +78,25 @@ if (mode === 'index') {
             recog2.interimResults = false;
             recog2.maxAlternatives = 1;
             recog2.start();
-
             recog2.onresult = function(ev) {
                 const transcript = ev.results[0][0].transcript.trim();
 
+                // ========= 新增: 若已在導航中且語音說取消導航 =========
+                if ((window.isNavigating || document.querySelector('.cancelRouteBtn')) &&
+                    (/取消導航|停止導航/.test(transcript))){
+                    const cancelBtn = document.querySelector('.cancelRouteBtn');
+                    if (cancelBtn) { 
+                        cancelBtn.click();
+                        speakNav('已取消導航');
+                        window.isNavigating = false; // 同步狀態
+                    } else {
+                        speakNav('目前沒有正在導航');
+                    }
+                    window.isVoiceSelection = false;
+                    return;
+                }
+
+                // =========== 原本搜尋地點流程 ==========
                 window.isVoiceSelection = true;
                 window.searchResultsData = [];
                 window.currentBatchStart = 0;
@@ -89,24 +104,21 @@ if (mode === 'index') {
                 document.getElementById('searchInput').value = transcript;
 
                 // 這裡直接執行同步查詢
-                // 1. 發出搜尋
                 fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(transcript)}`)
                     .then(r => r.json())
                     .then(data => {
-                    if (!data.length) {
-                        speakNav('找不到地點');
-                        window.isVoiceSelection = false;
-                        return;
-                    }
-                    window.searchResultsData = data;
-                    window.currentBatchStart = 0;
-                    // 直接渲染
-                    displayBatch();
-                    // 這裡「馬上」在辨識事件回呼內唸選單
-                    window.voiceBatchSelect();
+                        if (!data.length) {
+                            speakNav('找不到地點');
+                            window.isVoiceSelection = false;
+                            return;
+                        }
+                        window.searchResultsData = data;
+                        window.currentBatchStart = 0;
+                        displayBatch();
+                        window.voiceBatchSelect();
                     }).catch(() => {
-                    speakNav('搜尋錯誤');
-                });
+                        speakNav('搜尋錯誤');
+                    });
             };
         });
         return;

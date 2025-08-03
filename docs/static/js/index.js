@@ -21,6 +21,11 @@ let routeLayer = null;
 let userLocation = null;
 let currentHeading = 0;
 let isNavigating = false;
+let navigationSteps = [];
+let positionCheck = null;
+
+// 狀態同步到 window 供語音檢查
+window.isNavigating = isNavigating;
 
 // -------- 顯示切換工具 --------
 function showNavigationPrompt() {
@@ -121,6 +126,7 @@ if (navigator.geolocation) {
 document.getElementById('locateBtn').addEventListener('click', () => {
   navigator.geolocation?.getCurrentPosition(pos => {
     isNavigating = true;
+    window.isNavigating = isNavigating; // 狀態同步
     updateUserLocation(pos.coords.latitude, pos.coords.longitude);
   }, () => alert('定位失敗'));
 });
@@ -152,7 +158,6 @@ function handleOrientation(event) {
     currentHeading = 360 - event.alpha;
   }
   rotateUserIcon();
-  const mapEl = document.getElementById('map');
 }
 
 // ====== 搜尋與導航 ======
@@ -192,7 +197,7 @@ function displayBatch() {
   // *** 不在這裡朗讀及進入語音辨識，只由 speech.js 語音主流程呼叫一次 voiceBatchSelect ***
 }
 
-// ===== 語音批次選擇流程（唸完一批後等用戶說第幾筆或下一組）=====
+// ===== 語音批次選擇流程 =====
 function voiceBatchSelect() {
   if (!window.isVoiceSelection || !window.searchResultsData.length) return;
   // -- 唸出這一批 --
@@ -202,7 +207,7 @@ function voiceBatchSelect() {
 
   function speakBatchOptions() {
     if (i < batch.length) {
-      speechSynthesis.cancel(); // 關閉重複朗讀
+      speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(`第${i+1}筆，${batch[i].display_name}`);
       u.lang = 'zh-TW';
       u.onend = () => { i++; speakBatchOptions(); };
@@ -254,14 +259,13 @@ function voiceBatchSelect() {
     };
   }
 
-  speakBatchOptions(); // 開始唸一批
+  speakBatchOptions();
 }
 
 // 供 speech.js 語音主流程直接觸發
 window.voiceBatchSelect = voiceBatchSelect;
 
-
-// ===== 只改這一段 =====
+// ===== 目的地選擇與導航啟動（狀態同步） =====
 function handleDestinationSelect(place) {
   speechSynthesis.cancel();
 
@@ -324,6 +328,7 @@ function handleDestinationSelect(place) {
       }
       if (steps.length) showNavigationInstruction(steps);
       isNavigating = true;
+      window.isNavigating = isNavigating; // 狀態同步
       updateUserLocation(userLocation[0], userLocation[1]);
       addCancelNavigationButton();
       window.isVoiceSelection = false;
@@ -351,50 +356,39 @@ function addCancelNavigationButton() {
   cancelBtn.textContent = '取消導航';
 
   cancelBtn.addEventListener('click', () => {
-  hideNavigationPrompt();
-
-  if (routeLayer) {
-    map.removeLayer(routeLayer);
-    routeLayer = null;
-  }
-
-  if (destinationMarker) {
-    map.removeLayer(destinationMarker);
-    destinationMarker = null;
-  }
-
-  isNavigating = false;
-  navigationSteps = [];
-
-  if (userMarker) {
-    map.removeLayer(userMarker);
-    destinationMarker = null;
-    userMarker = L.marker(userLocation, { icon: createDefaultMarkerIcon() })
-      .addTo(map).bindPopup("您的位置").openPopup();
-  }
-
-  
-  const existingCancelBtn = document.querySelector('.cancelRouteBtn');
-  if (existingCancelBtn) existingCancelBtn.remove();
-
-  
-  document.getElementById('search-bar').style.display = 'flex';
-  resultsContainer.innerHTML = '';
-  resultsContainer.style.display = 'block';
-  searchInput.disabled = false;
-
-  
-  if (positionCheck) {
-    clearInterval(positionCheck);
-    positionCheck = null;
-  }
-
-  
-  document.getElementById('currentRoad').textContent = '';
-  document.getElementById('nextInstruction').textContent = '';
-  document.getElementById('navigationPrompt').style.display = 'none';
-});
-  navBox.appendChild(cancelBtn); 
+    hideNavigationPrompt();
+    if (routeLayer) {
+      map.removeLayer(routeLayer);
+      routeLayer = null;
+    }
+    if (destinationMarker) {
+      map.removeLayer(destinationMarker);
+      destinationMarker = null;
+    }
+    isNavigating = false;
+    window.isNavigating = isNavigating; // 狀態同步
+    navigationSteps = [];
+    if (userMarker) {
+      map.removeLayer(userMarker);
+      destinationMarker = null;
+      userMarker = L.marker(userLocation, { icon: createDefaultMarkerIcon() })
+        .addTo(map).bindPopup("您的位置").openPopup();
+    }
+    const existingCancelBtn = document.querySelector('.cancelRouteBtn');
+    if (existingCancelBtn) existingCancelBtn.remove();
+    document.getElementById('search-bar').style.display = 'flex';
+    resultsContainer.innerHTML = '';
+    resultsContainer.style.display = 'block';
+    searchInput.disabled = false;
+    if (positionCheck) {
+      clearInterval(positionCheck);
+      positionCheck = null;
+    }
+    document.getElementById('currentRoad').textContent = '';
+    document.getElementById('nextInstruction').textContent = '';
+    document.getElementById('navigationPrompt').style.display = 'none';
+  });
+  navBox.appendChild(cancelBtn);
 }
 
 // ===== 顯示導航指示（含語音播報） =====
@@ -454,12 +448,12 @@ function showNavigationInstruction(steps) {
         clearInterval(positionCheck);
         speakNav("您已抵達目的地");
         hideNavigationPrompt();
+        isNavigating = false;
+        window.isNavigating = isNavigating; // 狀態同步
       }
     }
   }, 2000);
 }
-
-
 
 // **切換到影像辨識前，先儲存目前地圖狀態到 sessionStorage**
 document.getElementById('cameraBtn').addEventListener('click', () => {
@@ -478,7 +472,7 @@ document.getElementById('cameraBtn').addEventListener('click', () => {
         }
       : null,
     routeGeoJSON: routeLayer ? routeLayer.toGeoJSON() : null,
-    steps:       navigationSteps                           // ◎ 新增 steps
+    steps:       navigationSteps
   };
   sessionStorage.setItem('mapState', JSON.stringify(state));
   window.location.href = '/detect';
