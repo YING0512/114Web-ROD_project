@@ -1,104 +1,25 @@
+initSpeechUI();
+document.getElementById('voiceCommandBtn').onclick = function () {
+    startVoiceCommand({ mode: 'detect' });
+}
+
 // ===== 初始 DOM 元素取得 =====
-// 取得 video、canvas、結果顯示、語音與按鈕等 DOM 元素引用
 const video         = document.getElementById('video');
 const overlay       = document.getElementById('overlay');
 const ctx           = overlay.getContext('2d');
 const resultEl      = document.getElementById('result');
-const speechToggle = document.getElementById('speechToggle');
-const speechIcon    = document.getElementById('speechIcon');
-const backBtn       = document.getElementById('backBtn');
+const mapBtn        = document.getElementById('mapBtn');
+const voiceBtn      = document.getElementById('voiceCommandBtn');
+
+// ====== 語音說明按鈕說明（保留） ======
 const speechInfoBtn = document.getElementById('speechInfo');
-const notice        = document.getElementById('speechNotice');
-const mapBtn = document.getElementById('mapBtn');
-const voiceBtn = document.getElementById('voiceCommandBtn');
-
-// ===== 語音播報參數設定 =====
-let speechEnabled    = true;    // TODO: 預設語音為「開」
-const SPEECH_COOLDOWN = 5000;    // 語音最短間隔：5 秒鐘
-const FRAME_THRESHOLD = 3;       // 當同一結果連續出現的幀數門檻
-let lastSpeechTime   = 0;        // 上次播報時間戳
-let movementCounter  = 0;        // 連續相同結果計數器
-let lastMovement     = "";       // 上次播報內容
-
-// ===== 語音開關按鈕 點擊處理 =====
-speechToggle.addEventListener('change', () => {
-  if (speechToggle.checked) {
-    speechIcon.className = 'fa-solid fa-volume-high';
-    speechToggle.title = '語音：開';
-    speechEnabled = true;
-  } else {
-    speechIcon.className = 'fa-solid fa-volume-xmark';
-    speechToggle.title = '語音：關';
-    speechEnabled = false;
-  }
-});
-
-// ===== 進入頁面時 顯示「語音開啟中…」提示 =====
-window.addEventListener('DOMContentLoaded', () => {
-
-// ===== 三連擊全頁 切換語音 =====
-// 便於單手操作：連續點擊 3 下便觸發 toggleSpeech()
-let clicks = 0, clickTimer;
-document.body.addEventListener('click', (e) => {
-  if (e.target.closest('#speechToggle')) return;
-  clicks++;
-  if (clicks === 1) {
-    // 首次點擊後啟動計時器，600ms 內若未三擊則重置
-    clickTimer = setTimeout(() => { clicks = 0; }, 800);
-  } else if (clicks === 3) {
-    // 三擊完成，清除計時器並切換語音
-    clearTimeout(clickTimer);
-    clicks = 0;
-    speechToggle.checked = !speechToggle.checked;
-    speechToggle.dispatchEvent(new Event('change'));
-  }
-});
-
-  if (speechEnabled) {
-    notice.style.display = 'block';              // 顯示提示文字
-    setTimeout(() => { notice.style.display = 'none'; }, 3000);  // 3 秒後隱藏
-    speak("語音播報開啟中...");                  // 立即播報一次
-  }
-});
-
-
-// ===== 語音操作資訊 按鈕 =====
 speechInfoBtn.addEventListener('click', () => {
-  alert('連續點擊畫面三下可切換語音開關');  // 跳出提示說明
+  alert('連續點擊畫面三下可切換語音開關'); // 跳出提示說明
 });
 
-// ===== 返回地圖 按鈕 行為 =====
-// backBtn.addEventListener('click', () => {
-//   window.history.back();      // 返回上一頁，維持先前操作狀態
-// });
-
+// ===== 返回地圖按鈕（直接跳回） =====
 mapBtn.addEventListener('click', () => {
   window.history.back();
-});
-
-// 語音辨識：若說出「地圖」則觸發 mapBtn
-voiceBtn.addEventListener('click', () => {
-  const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-  recognition.lang = 'zh-TW';
-  recognition.interimResults = false;
-  recognition.maxAlternatives = 1;
-
-  recognition.start();
-  speakNav("請說出指令，例如：地圖");
-
-  recognition.addEventListener('result', (event) => {
-    const transcript = event.results[0][0].transcript.trim();
-    if (/地圖/.test(transcript)) {
-      speakNav("正在返回地圖");
-      mapBtn.click();
-    } else {
-      speakNav("未識別的語音指令");
-    }
-  });
-
-  recognition.addEventListener('error', (e) => {
-    console.error("語音辨識錯誤", e.error);
-  });
 });
 
 // ===== 繪製辨識遮罩 多邊形 =====
@@ -135,15 +56,19 @@ function drawBoxes(boxes) {
   });
 }
 
+// ===== 語音播報辨識（冷卻/去重邏輯依原本需求） =====
+const SPEECH_COOLDOWN = 5000;
+const FRAME_THRESHOLD = 3;
+let lastSpeechTime = 0;
+let movementCounter = 0;
+let lastMovement = "";
 
-// ===== 語音播報函式（含冷卻時間控制） =====
 function speak(text) {
+  // 語音開關交由 speech.js 控制，這裡只負責冷卻與避免重複
   const now = Date.now();
-  if (!speechEnabled || now - lastSpeechTime < SPEECH_COOLDOWN) return;
+  if (now - lastSpeechTime < SPEECH_COOLDOWN) return;
   lastSpeechTime = now;
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'zh-TW';
-  speechSynthesis.speak(u);
+  speakNav(text);
 }
 
 // 幀門檻 + 重複過濾，避免連續重複播報
@@ -152,7 +77,7 @@ function handleSpeech(resultText) {
   movementCounter++;
   if (movementCounter >= FRAME_THRESHOLD) {
     speak(resultText);
-    lastMovement    = resultText;
+    lastMovement = resultText;
     movementCounter = 0;
   }
 }
@@ -192,10 +117,10 @@ navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image: dataUrl })
       });
-    const { boxes, result } = await res.json();
+      const { boxes, result } = await res.json();
 
       // 繪製遮罩並顯示文字結果
-    if (boxes && boxes.length) drawBoxes(boxes);
+      if (boxes && boxes.length) drawBoxes(boxes);
       resultEl.innerText = result;
       handleSpeech(result);
     }, 1000);
@@ -281,7 +206,7 @@ function showDetectNavigationInstruction(steps, userLoc) {
 
     document.getElementById('currentRoad').textContent    = `目前在：${step.name || "無名道路"}`;
     document.getElementById('nextInstruction').textContent = speechText;
-    speak(speechText);
+    speakNav(speechText); // 使用 speech.js 提供的 speakNav
   }
 
   update();  // 首次播報
@@ -300,7 +225,7 @@ function showDetectNavigationInstruction(steps, userLoc) {
         update();
       } else {
         clearInterval(checkNav);
-        speak("您已抵達目的地");
+        speakNav("您已抵達目的地");
       }
     }
   }, 2000);

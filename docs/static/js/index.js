@@ -1,98 +1,12 @@
-// ===== 語音播報設定 =====
-const speechBtn       = document.getElementById('speechToggle');
-const speechIcon      = document.getElementById('speechIcon');
-const speechInfoBtn   = document.getElementById('speechInfo');
-const speechNotice    = document.getElementById('speechNotice');
-
-let speechEnabled     = true;
-const SPEECH_COOLDOWN = 5000;
-const FRAME_THRESHOLD = 3;
-let lastSpeechTime    = 0;
-let movementCounter   = 0;
-let lastInstruction   = "";
-let navigationSteps   = [];
-let positionCheck     = null;
-let isVoiceSelection  = false;  // 標記是否為語音選擇
+initSpeechUI();
+document.getElementById('voiceNavBtn').onclick = function () {
+    startVoiceCommand({ mode: 'index' });
+}
 
 // ===== 搜尋結果資料與批次索引 =====
 let searchResultsData = [];
 let currentBatchStart = 0;
-
-// ===== 語音開關按鈕 點擊處理 =====
-speechToggle.addEventListener('change', () => {
-  if (speechToggle.checked) {
-    speechIcon.className = 'fa-solid fa-volume-high';
-    speechToggle.title = '語音：開';
-    speechEnabled = true;
-  } else {
-    speechIcon.className = 'fa-solid fa-volume-xmark';
-    speechToggle.title = '語音：關';
-    speechEnabled = false;
-  }
-});
-
-// ===== 三連擊全頁 切換語音 =====
-// 便於單手操作：連續點擊 3 下便觸發 toggleSpeech()
-let clicks = 0, clickTimer;
-document.body.addEventListener('click', (e) => {
-  if (e.target.closest('#speechToggle')) return;
-  clicks++;
-  if (clicks === 1) {
-    // 首次點擊後啟動計時器，600ms 內若未三擊則重置
-    clickTimer = setTimeout(() => { clicks = 0; }, 800);
-  } else if (clicks === 3) {
-    // 三擊完成，清除計時器並切換語音
-    clearTimeout(clickTimer);
-    clicks = 0;
-    speechToggle.checked = !speechToggle.checked;
-    speechToggle.dispatchEvent(new Event('change'));
-  }
-});
-
-// 進入頁面時顯示提示並播報
-window.addEventListener('DOMContentLoaded', () => {
-  if (speechEnabled) {
-    speechNotice.style.display = 'block';
-    setTimeout(() => { speechNotice.style.display = 'none'; }, 3000);
-    speak("語音播報開啟中…");
-  }
-});
-
-// 資訊按鈕：顯示操作說明
-speechInfoBtn.addEventListener('click', () => {
-  alert('連續點擊畫面三下可切換語音開關');
-});
-
-// ===== 語音播報函式，加入冷卻時間 =====
-function speak(text) {
-  if (!speechEnabled) return;
-  const now = Date.now();
-  if (now - lastSpeechTime < SPEECH_COOLDOWN) return;
-  lastSpeechTime = now;
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'zh-TW';
-  speechSynthesis.speak(u);
-}
-
-// 幀門檻 + 重複過濾，避免頻繁播報
-function handleSpeech(resultText) {
-  if (resultText === lastMovement) return;
-  movementCounter++;
-  if (movementCounter >= FRAME_THRESHOLD) {
-    speak(resultText);
-    lastMovement    = resultText;
-    movementCounter = 0;
-  }
-}
-
-// ===== 導航專用播報（不受冷卻限制） =====
-function speakNav(text) {
-  if (!speechEnabled) return;
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'zh-TW';
-  speechSynthesis.speak(u);
-}
-
+window.isVoiceSelection = false; // 全域語音選擇旗標
 
 // 初始化地圖
 const map = L.map('map').setView([22.999728, 120.227028], 13);
@@ -241,7 +155,7 @@ function handleOrientation(event) {
   const mapEl = document.getElementById('map');
 }
 
-// ===== 搜尋與導航 =====
+// ====== 搜尋與導航 ======
 const searchInput      = document.getElementById('searchInput');
 const resultsContainer = document.getElementById('searchResults');
 let debounceTimer = null;
@@ -250,8 +164,7 @@ let debounceTimer = null;
 searchInput.addEventListener('input', (event) => {
   const q = searchInput.value.trim();
   if (!q) return resultsContainer.innerHTML = '';
-  // 只有真正的鍵盤輸入會關閉語音流程
-  if (event.isTrusted) isVoiceSelection = false;
+  if (event.isTrusted) isVoiceSelection = false; // 手動輸入關閉語音流程
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
     fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}`)
@@ -260,11 +173,12 @@ searchInput.addEventListener('input', (event) => {
         searchResultsData = data;
         currentBatchStart = 0;
         displayBatch();
+        // ※ displayBatch 只負責顯示，語音主流程只由 speech.js 呼叫一次 voiceBatchSelect
       }).catch(() => resultsContainer.innerHTML = '<li>搜尋錯誤</li>');
   }, 300);
 });
 
-// ===== 顯示一批（最多 5 筆），語音播報僅限語音流程 =====
+// ===== 顯示一批（最多 5 筆），語音模式下只顯示不重複進入語音流程 =====
 function displayBatch() {
   resultsContainer.innerHTML = '';
   const batch = searchResultsData.slice(currentBatchStart, currentBatchStart + 5);
@@ -275,17 +189,79 @@ function displayBatch() {
     li.addEventListener('click', () => handleDestinationSelect(p));
     resultsContainer.appendChild(li);
   });
-  if (isVoiceSelection) {
-    const numerals = ['一','二','三','四','五'];
-    batch.forEach((p, i) => {
-      const u = new SpeechSynthesisUtterance(`${numerals[i]}，${p.display_name}`);
-      u.lang = 'zh-TW';
-      speechSynthesis.speak(u);
-    });
-    speakNav('請說第幾筆選擇或說下一組');
-  }
+  // *** 不在這裡朗讀及進入語音辨識，只由 speech.js 語音主流程呼叫一次 voiceBatchSelect ***
 }
 
+// ===== 語音批次選擇流程（唸完一批後等用戶說第幾筆或下一組）=====
+function voiceBatchSelect() {
+  if (!window.isVoiceSelection || !window.searchResultsData.length) return;
+  // -- 唸出這一批 --
+  const batch = window.searchResultsData.slice(window.currentBatchStart, window.currentBatchStart + 5);
+  const numerals = ['一','二','三','四','五'];
+  let i = 0;
+
+  function speakBatchOptions() {
+    if (i < batch.length) {
+      speechSynthesis.cancel(); // 關閉重複朗讀
+      const u = new SpeechSynthesisUtterance(`第${i+1}筆，${batch[i].display_name}`);
+      u.lang = 'zh-TW';
+      u.onend = () => { i++; speakBatchOptions(); };
+      speechSynthesis.speak(u);
+    } else {
+      speechSynthesis.cancel();
+      const tip = new SpeechSynthesisUtterance('請說第幾筆選擇，或說下一組');
+      tip.lang = 'zh-TW';
+      tip.onend = () => {
+        setTimeout(startVoiceSelect, 200);
+      };
+      speechSynthesis.speak(tip);
+    }
+  }
+
+  // 唸選項+提示後進語音辨識
+  function startVoiceSelect() {
+    let recog = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recog.lang = 'zh-TW';
+    recog.interimResults = false;
+    recog.maxAlternatives = 1;
+    recog.start();
+    recog.onresult = function(ev) {
+      const transcript = ev.results[0][0].transcript.trim();
+      const numMap = {'一':1,'二':2,'三':3,'四':4,'五':5,'1':1,'2':2,'3':3,'4':4,'5':5};
+      let sel = null;
+      for (let k in numMap) {
+        if (transcript.includes(k)) { sel = numMap[k]; break; }
+      }
+      if (sel != null) {
+        const idx = currentBatchStart + sel - 1;
+        if (idx < searchResultsData.length) {
+          speakNav('正在導航到目的地');
+          // 這裡**不要設 window.isVoiceSelection = false**，由 handleDestinationSelect 去處理！
+          handleDestinationSelect(searchResultsData[idx]);
+          return;
+        }
+      }
+      if (/下|下一|再來/.test(transcript)) {
+        currentBatchStart += 5;
+        if (currentBatchStart >= searchResultsData.length) currentBatchStart = 0;
+        // 下一組之後重播新的一組
+        voiceBatchSelect();
+        return;
+      }
+      // 無匹配則再來一次
+      speakNav('請再說一次，第幾筆或下一組');
+      setTimeout(voiceBatchSelect, 800);
+    };
+  }
+
+  speakBatchOptions(); // 開始唸一批
+}
+
+// 供 speech.js 語音主流程直接觸發
+window.voiceBatchSelect = voiceBatchSelect;
+
+
+// ===== 只改這一段 =====
 function handleDestinationSelect(place) {
   speechSynthesis.cancel();
 
@@ -293,31 +269,32 @@ function handleDestinationSelect(place) {
   const lon = parseFloat(place.lon);
   if (isNaN(lat) || isNaN(lon)) {
     alert("目的地座標有誤");
-    isVoiceSelection = false;
+    window.isVoiceSelection = false;
     return;
   }
 
-  // 設置標記並清除列表
   if (destinationMarker) map.removeLayer(destinationMarker);
   destinationMarker = L.marker([lat, lon]).addTo(map).bindPopup(place.display_name).openPopup();
   map.setView([lat, lon], 15);
   resultsContainer.innerHTML = '';
   searchInput.value = '';
 
-  // 若非語音流程，保留手動確認
-  if (!isVoiceSelection) {
+  // 只在「非語音流程」時詢問
+  if (!window.isVoiceSelection) {
     if (!confirm("已選擇目的地，是否立即導航？")) {
       return;
     }
   }
 
+  // 只在這裡歸零
+  window.isVoiceSelection = false;
+
   if (!userLocation || userLocation.length !== 2 || userLocation.some(isNaN)) {
     alert("⚠️ 尚未取得有效的使用者位置，請先啟用定位功能再試一次。");
-    isVoiceSelection = false;
+    window.isVoiceSelection = false;
     return;
   }
 
-  
   requestOrientationPermission();
 
   const startLon = userLocation[1];
@@ -332,7 +309,6 @@ function handleDestinationSelect(place) {
       return res.json();
     })
     .then(data => {
-      // 畫出路線並縮放至範圍
       const route = data.routes[0].geometry;
       if (routeLayer) {
         map.removeLayer(routeLayer);
@@ -343,24 +319,25 @@ function handleDestinationSelect(place) {
 
       const steps = data.routes[0].legs?.[0]?.steps || [];
       navigationSteps = steps;
-      // 非語音流程再播報完整目的地名稱
-      if (!isVoiceSelection) {
+      if (!window.isVoiceSelection) {
         speakNav(`正在導航到${place.display_name}`);
       }
       if (steps.length) showNavigationInstruction(steps);
       isNavigating = true;
       updateUserLocation(userLocation[0], userLocation[1]);
       addCancelNavigationButton();
-      isVoiceSelection = false;
+      window.isVoiceSelection = false;
     })
     .catch(err => {
       console.error("路線規劃錯誤:", err);
       alert("路線規劃錯誤");
       showNavigationPrompt();
       addCancelNavigationButton();
-      isVoiceSelection = false;
+      window.isVoiceSelection = false;
     });
 }
+
+
 
 
 function addCancelNavigationButton() {
@@ -456,10 +433,10 @@ function showNavigationInstruction(steps) {
     document.getElementById('nextInstruction').textContent = speechText;
 
     // 語音播報
-    speakNav(speechText);
+    speakNav(speechText); // 直接呼叫 speech.js 的 speakNav
   }
 
-  updateInstruction(); // ◎ 立即顯示並播報第一條指示
+  updateInstruction();
 
   positionCheck = setInterval(() => {
     if (!userLocation) return;
