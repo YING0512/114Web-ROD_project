@@ -1,7 +1,8 @@
 initSpeechUI();
 document.getElementById('voiceCommandBtn').onclick = function () {
-    startVoiceCommand({ mode: 'detect' });
-}
+  speechSynthesis.cancel(); 
+  setTimeout(() => startVoiceCommand({ mode: 'detect' }), 300);
+};
 
 // ===== 初始 DOM 元素取得 =====
 const video         = document.getElementById('video');

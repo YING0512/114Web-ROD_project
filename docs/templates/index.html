@@ -26,7 +26,7 @@
   
   <!-- ===== 語音開關 & 資訊 ===== -->
   <!-- ===== 語音開關按鈕 ===== -->
-    <div class="speech-toggle" style="position:fixed; top:25px; right:30px; z-index:1001;">
+    <div class="speech-toggle" style="position:fixed; top:25px; right:30px; z-index:10000;">
       <label class="speech-btn" title="語音開關">
         <input type="checkbox" id="speechToggle" checked>
         <span class="slider"></span>
@@ -34,7 +34,7 @@
       </label>
     </div>
   <!-- ===== 語音說明按鈕 ===== -->
-  <div class="speech-info" style="position:fixed; top:25px; right:10px; z-index:1001;">
+  <div class="speech-info" style="position:fixed; top:25px; right:10px; z-index:10000;">
     <button id="speechInfo" class="speech-info-btn" title="語音操作說明">
       <i class="fa-solid fa-circle-info"></i>
     </button>
@@ -78,13 +78,15 @@
   <!-- 相機 input -->
   <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;" />
 
-  <!-- JS 載入 -->
+  <!-- speech 語音控制 -->
   <script src="{{ url_for('static', filename='js/speech.js') }}"></script>
-  <!-- <script src="{{ url_for('static', filename='js/voiceNav.js') }}"></script> -->
   <script>
+    // ✅ 再次載入時重新初始化語音控制狀態
     initSpeechUI();
     speakNav("語音播報開啟中…");
   </script>
+
+  <!-- index 行為控制 -->
   <script src="{{ url_for('static', filename='js/index.js') }}"></script>
 </body>
 </html>

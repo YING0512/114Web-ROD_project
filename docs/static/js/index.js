@@ -3,6 +3,12 @@ document.getElementById('voiceNavBtn').onclick = function () {
     startVoiceCommand({ mode: 'index' });
 }
 
+// ===== 語音說明按鈕事件處理 =====
+const speechInfoBtn = document.getElementById('speechInfo');
+speechInfoBtn.addEventListener('click', () => {
+  alert('連續點擊畫面三下可切換語音開關');
+});
+
 // ===== 搜尋結果資料與批次索引 =====
 let searchResultsData = [];
 let currentBatchStart = 0;
@@ -357,6 +363,7 @@ function addCancelNavigationButton() {
 
   cancelBtn.addEventListener('click', () => {
     hideNavigationPrompt();
+
     if (routeLayer) {
       map.removeLayer(routeLayer);
       routeLayer = null;
@@ -365,31 +372,44 @@ function addCancelNavigationButton() {
       map.removeLayer(destinationMarker);
       destinationMarker = null;
     }
+
     isNavigating = false;
     window.isNavigating = isNavigating; // 狀態同步
     navigationSteps = [];
+
     if (userMarker) {
       map.removeLayer(userMarker);
       destinationMarker = null;
       userMarker = L.marker(userLocation, { icon: createDefaultMarkerIcon() })
-        .addTo(map).bindPopup("您的位置").openPopup();
+        .addTo(map)
+        .bindPopup("您的位置")
+        .openPopup();
     }
+
     const existingCancelBtn = document.querySelector('.cancelRouteBtn');
     if (existingCancelBtn) existingCancelBtn.remove();
+
     document.getElementById('search-bar').style.display = 'flex';
     resultsContainer.innerHTML = '';
     resultsContainer.style.display = 'block';
     searchInput.disabled = false;
+
     if (positionCheck) {
       clearInterval(positionCheck);
       positionCheck = null;
     }
+
     document.getElementById('currentRoad').textContent = '';
     document.getElementById('nextInstruction').textContent = '';
     document.getElementById('navigationPrompt').style.display = 'none';
+
+    // ✅ 加在這裡：取消導航時才清除儲存的導航狀態
+    sessionStorage.removeItem('mapState');
   });
+
   navBox.appendChild(cancelBtn);
 }
+
 
 // ===== 顯示導航指示（含語音播報） =====
 function showNavigationInstruction(steps) {

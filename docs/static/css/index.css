@@ -83,7 +83,7 @@ body, html {
   position: absolute;
   top: 10px;
   left: 50px;
-  right: 65px;
+  right: 80px;
   z-index: 1000;
   background: #00695c;
   color: white;
@@ -105,9 +105,9 @@ body, html {
 /* 搜尋結果清單 */
 .search-results {
   position: absolute;
-  top: 60px;
+  top: 71px;
   left: 50px;
-  right: 85px;
+  right: 80px;
   background: white;
   border-radius: 10px;
   max-height: 200px;
@@ -278,7 +278,7 @@ body, html {
   color: #fff;
   padding: 6px 12px;
   border-radius: 4px;
-  z-index: 1001;
+  z-index: 11;
 }
 
 /* ===== 頁面載入時的 Loading 畫面 ===== */

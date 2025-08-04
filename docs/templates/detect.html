@@ -77,6 +77,9 @@
   <script src="{{ url_for('static', filename='leaflet/leaflet.js') }}"></script>
   <script src="{{ url_for('static', filename='js/speech.js') }}"></script>
   <script>
+    speechSynthesis.cancel(); // 清除 index 頁遺留的語音
+  </script>
+  <script>
     initSpeechUI();
     speakNav("語音播報開啟中…");
   </script>
