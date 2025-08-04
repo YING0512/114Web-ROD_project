@@ -1,15 +1,11 @@
-/* ==========================================================================
-   全域重置：確保 padding、border 不影響元素大小，並移除預設邊距
-   ========================================================================== */
+/* 全域重置：設定 box-sizing 並移除預設間距 */
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-/* ====================================================================
-   偵測頁面 Header
-   ==================================================================== */
+/* 偵測頁面 Header */
 .header {
   position: fixed;
   top: 0;
@@ -30,9 +26,8 @@
 .app-container {
   padding-bottom: 125px;
 }
-/* ====================================================================
-   語音開關按鈕 - 改為滑動開關樣式
-   ==================================================================== */
+
+/* 語音開關滑動開關樣式 */
 .speech-btn {
   position: relative;
   display: inline-block;
@@ -73,11 +68,7 @@
   transform: translateX(13px);
 }
 
-
-
-/* ====================================================================
-   相機串流容器
-   ==================================================================== */
+/* 相機串流容器 */
 .camera-container {
   position: relative;
   width: 100%;
@@ -91,6 +82,8 @@
 .camera-container.fixed {
   height: auto;
 }
+
+/* 相機 video / canvas 覆蓋定位 */
 .camera-container video,
 .camera-container canvas {
   position: absolute;
@@ -99,13 +92,14 @@
   width: 100%;
   height: auto;
 }
+
+/* 禁用 overlay 上的滑鼠事件 */
 #overlay {
   pointer-events: none;
 }
 
-/* ====================================================================
-   漂浮的返回地圖按鈕（取代 back-btn）
-   ==================================================================== */
+/* ===== 漂浮的返回地圖按鈕 ===== */
+/* 置頂左上，半透明白底，點擊可返回地圖 */
 .back-btn-floating {
   position: absolute;
   top: 10px;
@@ -123,9 +117,8 @@
   color: #333;
 }
 
-/* ====================================================================
-   辨識結果顯示框
-   ==================================================================== */
+/* ===== 辨識結果顯示框 ===== */
+/* 顯示識別文字結果 */
 .result-box {
   width: 100%;
   max-width: 480px;
@@ -147,9 +140,8 @@
   font-size: 18px;
 }
 
-/* ====================================================================
-   縮略圖容器（MiniMap區）
-   ==================================================================== */
+/* ===== 縮略圖容器 (MiniMap) ===== */
+/* 包含地圖縮圖 */
 .output-container {
   width: 100%;
   max-width: 480px;
@@ -164,38 +156,37 @@
 .mini-map {
   position: relative;
   width: 100%;
-  max-width: 480px;      
+  max-width: 480px;
   height: 300px;
   z-index: 10;
   background: #f5f5f5;
-  margin: 0px auto;     
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  margin: 0 auto;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
-/* ====================================================================
-   導航提示區塊
-   ==================================================================== */
+/* ===== 偵測頁面導航提示 ===== */
+/* 隱藏時 MiniMap 撐滿高度 */
 #navigationPrompt {
   display: none;
   width: 100%;
   max-width: 480px;
   margin: 1px auto;
-  background: rgba(0, 105, 92, 0.9);
+  background: rgba(0,105,92,0.9);
   color: #fff;
   padding: 10px 16px;
   font-size: 16px;
   border-radius: 4px;
 }
-/* 未啟動導航時 MiniMap 區頂滿 */
 #navigationPrompt[style*="display:none"] + .reserved-area .mini-map {
   top: 0 !important;
   height: 100% !important;
 }
-/* 底部左右分割按鈕容器 */
-/* 改成浮動樣式按鈕列 */
+
+/* ===== 底部按鈕列 ===== */
+/* 固定底部，兩等分按鈕 */
 .split-buttons {
   position: fixed;
-  bottom: 5px;           /* 與下方距離 */
+  bottom: 5px;
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
@@ -204,11 +195,11 @@
   z-index: 2000;
   background: white;
   border-radius: 16px;
-  box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.3); /* 陰影右下角 */
+  box-shadow: 4px 4px 12px rgba(0,0,0,0.3);
   overflow: hidden;
 }
 
-/* 二分之一按鈕 */
+/* ===== 二分之一按鈕 ===== */
 .half-btn {
   flex: 1;
   display: flex;
@@ -221,6 +212,7 @@
   transition: background 0.3s;
 }
 .half-btn:hover { background: #f5f5f5; }
+/* 中間分隔線 */
 .divider {
   width: 2px;
   background: #8f8f8f;
@@ -228,17 +220,17 @@
   align-self: center;
 }
 
-/* 讓底部三等分按鈕垂直排列 icon + 文字 */
+/* ===== 垂直排列 icon + 文字 ===== */
 .split-buttons .half-btn {
   flex-direction: column;
 }
-
 /* 按鈕文字 */
 .split-buttons .half-btn .btn-text {
   margin-top: 8px;
   font-size: 20px;
   line-height: 1;
 }
+
 /* ===== 頁面載入時的 Loading 畫面 ===== */
 #loader-wrapper {
   position: fixed;
@@ -260,13 +252,11 @@
   height: 60px;
   animation: spin 1s linear infinite;
 }
-
 .loader-content {
   display: flex;
   flex-direction: column;
   align-items: center;
 }
-
 .loading-text {
   margin-top: 12px;
   font-size: 16px;
@@ -274,9 +264,8 @@
   opacity: 1;
   transition: opacity 2s ease;
 }
-
 @keyframes spin {
-  0% { transform: rotate(0deg); }
+  0%   { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
 
@@ -304,12 +293,11 @@
    響應式設計（手機）
    ==================================================================== */
 @media screen and (max-width: 768px) {
-  .camera-container ,
+  .camera-container,
   .result-box {
     width: 100%;
     max-width: 100%;
     margin: 0 auto;
-
   }
 }
 

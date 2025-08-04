@@ -1,10 +1,12 @@
-/* 全域樣式設定 */
+/* ===== 全域樣式設定 ===== */
+/* 將所有元素的 box model 設為 border-box，並移除預設的 margin 和 padding */
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
+/* 讓 html 和 body 撐滿整個視口高度，並設定預設字體與背景色 */
 body, html {
   height: 100%;
   font-family: sans-serif;
@@ -13,6 +15,7 @@ body, html {
   padding: 0;
 }
 
+/* 應用程式最外層容器，使用相對定位並允許垂直滾動 */
 .app-container {
   position: relative;
   width: 100%;
@@ -21,25 +24,29 @@ body, html {
   overflow: auto;
 }
 
+/* 地圖父容器，填滿整個視口並隱藏超出部分 */
 #map-container {
   position: relative;
   width: 100%;
-  height: 100vh; /* 改成整個視口高 */
+  height: 100vh; /* 佔滿整個視口高度 */
   overflow: hidden;
 }
 
+/* 地圖元素本體，絕對定位以填滿父容器，並加入平滑變形過渡效果 */
 #map {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
-  height: 100%; /* 高度繼承自外層容器 */
+  height: 100%; /* 繼承自 #map-container */
   z-index: 1;
   transform-origin: center center;
   transition: transform 0.3s ease;
 }
 
-/* 搜尋列 */
+
+/* ===== 搜尋列樣式 ===== */
+/* 搜尋列區塊：絕對定位於地圖上方，並使用半透明白底及圓角 */
 .search-bar {
   position: absolute;
   top: 15px;
@@ -53,6 +60,8 @@ body, html {
   gap: 8px;
   align-items: center;
 }
+
+/* 搜尋輸入框：固定高度，佔滿可用寬度，並加上內距與邊框 */
 .search-bar input {
   height: 40px;
   flex: 1 1 0;
@@ -61,24 +70,30 @@ body, html {
   border: 1px solid #ccc;
   border-radius: 6px;
 }
+
+/* 搜尋按鈕：固定正方形，中央對齊文字，背景及圓角設計 */
 .search-bar button {
-  width: 40px;            
-  height: 40px;           
-  display: flex;          
+  width: 40px;
+  height: 40px;
+  display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;             
+  padding: 0;
   background: #a3a3a3;
   color: white;
   border: none;
   border-radius: 6px;
   cursor: pointer;
 }
+
+/* 搜尋按鈕滑鼠懸停時變更背景顏色 */
 .search-bar button:hover {
   background: #909090;
 }
 
-/* 導航提示區塊 */
+
+/* ===== 導航提示區塊 ===== */
+/* 導航提示：絕對定位於地圖上方，綠底白字，預設隱藏 */
 #navigationPrompt {
   position: absolute;
   top: 10px;
@@ -91,10 +106,11 @@ body, html {
   padding: 12px 16px;
   font-size: 16px;
   line-height: 1.6;
-  display: none; /* 預設隱藏，由 JS 控制 */
+  display: none; /* 由 JavaScript 控制顯示／隱藏 */
   box-shadow: 0 2px 6px rgba(0,0,0,0.3);
 }
 
+/* 導航提示內文字區塊之間添加下方間距 */
 #navigationPrompt #currentRoad,
 #navigationPrompt #nextInstruction {
   margin-bottom: 4px;
@@ -102,7 +118,8 @@ body, html {
 
 
 
-/* 搜尋結果清單 */
+/* ===== 搜尋結果清單 ===== */
+/* 絕對定位於搜尋列下方，最多200px高度，可垂直捲動 */
 .search-results {
   position: absolute;
   top: 71px;
@@ -117,16 +134,24 @@ body, html {
   padding: 0;
   margin: 0;
 }
-.search-results:empty { display: none; }
+/* 無結果時隱藏 */
+.search-results:empty {
+  display: none;
+}
+/* 清單項目 */
 .search-results li {
   padding: 10px;
   border-bottom: 1px solid #eee;
   cursor: pointer;
 }
+/* 懸停背景 */
 .search-results li:hover {
   background-color: #f0f0f0;
 }
-/* 取消導航按鈕 */
+
+
+/* ===== 取消導航按鈕 ===== */
+/* 滿寬度灰底白字 */
 .cancelRouteBtn {
   width: 100%;
   padding: 12px;
@@ -139,15 +164,17 @@ body, html {
   font-size: 16px;
   margin-top: 12px;
 }
+/* 懸停變色 */
 .cancelRouteBtn:hover {
   background-color: #777777;
 }
 
-/* 底部左右分割按鈕容器 */
-/* 改成浮動樣式按鈕列 */
+
+/* ===== 底部三按鈕容器 ===== */
+/* 浮動於畫面底部，三等分按鈕 */
 .split-buttons {
   position: absolute;
-  bottom: 20px;           /* 與下方距離 */
+  bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
   width: 90%;
@@ -156,23 +183,28 @@ body, html {
   z-index: 2000;
   background: white;
   border-radius: 16px;
-  box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.3); /* 陰影右下角 */
+  box-shadow: 4px 4px 12px rgba(0,0,0,0.3);
   overflow: hidden;
 }
 
-/* 三分之一按鈕 */
+/* ===== 按鈕樣式 ===== */
+/* 等分寬度，垂直排列 */
 .half-btn {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-direction: column;
   font-size: 40px;
   background: #fff;
   border: none;
   cursor: pointer;
   transition: background 0.3s;
 }
-.half-btn:hover { background: #f5f5f5; }
+.half-btn:hover {
+  background: #f5f5f5;
+}
+/* 中間分隔線 */
 .divider {
   width: 2px;
   background: #8f8f8f;
@@ -192,43 +224,50 @@ body, html {
   line-height: 1;
 }
 
+
+/* ===== 箭頭標示 ===== */
+/* 顯示使用者朝向 */
 .leaflet-arrow-icon {
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%); /* 地圖中心點 */
+  transform: translate(-50%, -50%);
   z-index: 1000;
   width: 50px;
   height: 50px;
 }
-
+/* 圓形半透明背景 */
 .arrow-background {
   position: absolute;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0,0,0,0.3);
   border-radius: 50%;
 }
 
-/* 箭頭本體（含 clip-path） */
+
+/* ===== 箭頭圖示 ===== */
+/* 定義箭頭形狀及剪裁 */
 .arrow-icon {
   width: 72px;
   height: 72px;
   background-color: #0040ff;
   position: relative;
   clip-path: polygon(
-    50% 0%,    /* A: 頂端尖角 */
-    65% 55%,   /* B: 右上斜邊 */
-    55% 50%,   /* C: 右下內縮 */
-    45% 50%,   /* E: 左下內縮 */
-    35% 55%    /* F: 左上斜邊 */
+    50% 0%,   /* 頂端尖角 */
+    65% 55%,  /* 右上斜邊 */
+    55% 50%,  /* 右下凹點 */
+    45% 50%,  /* 左下凹點 */
+    35% 55%   /* 左上斜邊 */
   );
   transform-origin: center center;
   transition: transform 0.2s linear;
   transform: translate(-50%, -50%);
   z-index: 1;
 }
-/* ===== 語音開關按鈕 & 提示 ===== */
+
+/* ===== 語音開關按鈕 ===== */
+/* 簡易切換開關樣式 */
 .speech-btn {
   position: relative;
   display: inline-block;
@@ -240,17 +279,16 @@ body, html {
   width: 0;
   height: 0;
 }
+/* 滑桿背景 */
 .speech-btn .slider {
   position: absolute;
   cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  top: 0; left: 0; right: 0; bottom: 0;
   background-color: #ccc;
   transition: 0.4s;
   border-radius: 34px;
 }
+/* 滑塊圓點 */
 .speech-btn .slider::before {
   position: absolute;
   content: "";
@@ -262,6 +300,7 @@ body, html {
   transition: 0.4s;
   border-radius: 50%;
 }
+/* 開啟狀態 */
 .speech-btn input:checked + .slider {
   background-color: #4caf50;
 }
@@ -269,6 +308,8 @@ body, html {
   transform: translateX(13px);
 }
 
+/* ===== 語音提示文字 ===== */
+/* 顯示語音開關狀態提示 */
 .speech-notice {
   position: absolute;
   top: 60px;
@@ -282,6 +323,7 @@ body, html {
 }
 
 /* ===== 頁面載入時的 Loading 畫面 ===== */
+/* 遮罩容器：覆蓋全頁並置中內容，預設可淡出過渡 */
 #loader-wrapper {
   position: fixed;
   width: 100%;
@@ -294,6 +336,7 @@ body, html {
   transition: opacity 2s ease;
 }
 
+/* 圓形旋轉指示器 */
 .spinner {
   border: 8px solid #f3f3f3;
   border-top: 8px solid #333;
@@ -303,12 +346,14 @@ body, html {
   animation: spin 1s linear infinite;
 }
 
+/* loader 內容：圖示與文字垂直排列 */
 .loader-content {
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
+/* 「loading...」文字 */
 .loading-text {
   margin-top: 12px;
   font-size: 16px;
@@ -317,8 +362,9 @@ body, html {
   transition: opacity 2s ease;
 }
 
+/* 旋轉動畫定義 */
 @keyframes spin {
-  0% { transform: rotate(0deg); }
+  0%   { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
 
@@ -343,9 +389,8 @@ body, html {
 }
 
 
-/* ===== index.css 最後 ===== */
-
-/* 手機或平板小螢幕下，自動顯示滾動條，避免內容被截斷 */
+/* ===== 手機／平板 小螢幕調整 ===== */
+/* 小於768px時，app-container自動顯示滾動條 */
 @media (max-width: 768px) {
   .app-container {
     position: relative;

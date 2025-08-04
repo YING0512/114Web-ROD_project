@@ -1,80 +1,100 @@
+// 初始化語音控制 UI
 initSpeechUI();
+// 點擊「語音指令」按鈕時，先停止目前語音，延遲啟動偵測模式
 document.getElementById('voiceCommandBtn').onclick = function () {
-  speechSynthesis.cancel(); 
+  speechSynthesis.cancel();
   setTimeout(() => startVoiceCommand({ mode: 'detect' }), 300);
 };
 
 // ===== 初始 DOM 元素取得 =====
-const video         = document.getElementById('video');
-const overlay       = document.getElementById('overlay');
-const ctx           = overlay.getContext('2d');
-const resultEl      = document.getElementById('result');
-const mapBtn        = document.getElementById('mapBtn');
-const voiceBtn      = document.getElementById('voiceCommandBtn');
+// 取得影片元素（camera stream）
+const video    = document.getElementById('video');
+// 取得繪製遮罩的 canvas 元素
+const overlay  = document.getElementById('overlay');
+// 取得 canvas 的繪圖上下文
+const ctx      = overlay.getContext('2d');
+// 取得顯示結果文字的元素
+const resultEl = document.getElementById('result');
+// 取得「返回地圖」按鈕
+const mapBtn   = document.getElementById('mapBtn');
+// 取得「語音指令」按鈕
+const voiceBtn = document.getElementById('voiceCommandBtn');
 
-// ====== 語音說明按鈕說明（保留） ======
+// ===== 語音說明按鈕事件（保留） =====
+// 取得語音說明按鈕，點擊跳出提示
 const speechInfoBtn = document.getElementById('speechInfo');
 speechInfoBtn.addEventListener('click', () => {
-  alert('連續點擊畫面三下可切換語音開關'); // 跳出提示說明
+  alert('連續點擊畫面三下可切換語音開關');
 });
 
-// ===== 返回地圖按鈕（直接跳回） =====
+// ===== 返回地圖按鈕 =====
+// 點擊後使用瀏覽器回上一頁
 mapBtn.addEventListener('click', () => {
   window.history.back();
 });
 
-// ===== 繪製辨識遮罩 多邊形 =====
+// ===== 繪製多邊形遮罩 =====
 function drawMasks(masks) {
-  ctx.clearRect(0, 0, overlay.width, overlay.height);  // 清空畫布
-  ctx.fillStyle = 'rgba(0,255,0,0.3)';                 // 半透明綠色
+  // 清空畫布
+  ctx.clearRect(0, 0, overlay.width, overlay.height);
+  // 設定半透明綠色填充
+  ctx.fillStyle = 'rgba(0,255,0,0.3)';
   masks.forEach(poly => {
     ctx.beginPath();
     poly.forEach(([x, y], i) => {
       i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     });
     ctx.closePath();
-    ctx.fill();  // 填滿多邊形
+    ctx.fill();
   });
 }
 
+// ===== 繪製框與標籤 =====
 function drawBoxes(boxes) {
+  // 清空畫布
   ctx.clearRect(0, 0, overlay.width, overlay.height);
+  // 設定框線樣式
   ctx.strokeStyle = 'lime';
   ctx.lineWidth = 2;
+  // 設定文字樣式
   ctx.font = "16px Arial";
   ctx.fillStyle = "rgba(0,0,0,0.5)";
   ctx.textBaseline = "top";
 
   boxes.forEach(box => {
     const { x1, y1, x2, y2, label, score } = box;
+    // 畫出偵測框
     ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+    // 建立標籤文字
     const tag = `${label} ${Math.round(score * 100)}%`;
     const textWidth = ctx.measureText(tag).width;
+    // 畫出黑色半透明底色
     ctx.fillRect(x1, y1 - 20, textWidth + 6, 20);
+    // 畫出白色文字
     ctx.fillStyle = "#fff";
     ctx.fillText(tag, x1 + 3, y1 - 20 + 3);
     ctx.fillStyle = "rgba(0,0,0,0.5)";
   });
 }
 
-// ===== 語音播報辨識（冷卻/去重邏輯依原本需求） =====
-const SPEECH_COOLDOWN = 5000;
-const FRAME_THRESHOLD = 3;
-let lastSpeechTime = 0;
-let movementCounter = 0;
-let lastMovement = "";
+// ===== 語音播報辨識結果（冷卻 & 去重） =====
+const SPEECH_COOLDOWN = 5000; // 語音最小間隔 (ms)
+const FRAME_THRESHOLD = 3;   // 幀數門檻
+let lastSpeechTime   = 0;    // 上次播報時間
+let movementCounter  = 0;    // 累計驗證次數
+let lastMovement     = "";   // 上次播報文字
 
 function speak(text) {
-  // 語音開關交由 speech.js 控制，這裡只負責冷卻與避免重複
   const now = Date.now();
+  // 若距離上次播報未達冷卻時間，則跳過
   if (now - lastSpeechTime < SPEECH_COOLDOWN) return;
   lastSpeechTime = now;
-  speakNav(text);
+  speakNav(text);  // 呼叫語音播報函式
 }
 
-// 幀門檻 + 重複過濾，避免連續重複播報
+// 門檻 & 去重邏輯：需累計足夠幀數且文字不得與上次相同
 function handleSpeech(resultText) {
-  if (resultText === lastMovement) return;  // 相同文字則跳過
+  if (resultText === lastMovement) return;
   movementCounter++;
   if (movementCounter >= FRAME_THRESHOLD) {
     speak(resultText);
@@ -83,29 +103,29 @@ function handleSpeech(resultText) {
   }
 }
 
-// ===== 啟用相機並定時送影像至後端偵測 =====
+// ===== 啟用相機並定時送影像偵測 =====
 navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
   .then(stream => {
+    // 設定影片來源
     video.srcObject = stream;
     return new Promise(r => video.onloadedmetadata = r);
   })
   .then(() => {
-    // 同步 overlay 大小與相機容器高度
+    // 同步 overlay 與影片尺寸
     overlay.width  = video.videoWidth;
     overlay.height = video.videoHeight;
     const cam = document.querySelector('.camera-container');
     cam.style.height = `${video.videoHeight * (cam.clientWidth / video.videoWidth)}px`;
     cam.classList.add('fixed');
 
+    // 移除載入動畫
     const loader = document.getElementById('loader-wrapper');
     if (loader) {
       loader.classList.add('fade-out');
-      setTimeout(() => {
-        loader.remove();
-      }, 2000);
+      setTimeout(() => loader.remove(), 2000);
     }
 
-    // 每秒擷取影像並傳給 /detect API
+    // 每秒擷取一張影像並呼叫 /detect API
     setInterval(async () => {
       const tmp = document.createElement('canvas');
       tmp.width  = overlay.width;
@@ -120,7 +140,7 @@ navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
       });
       const { boxes, result } = await res.json();
 
-      // 繪製遮罩並顯示文字結果
+      // 繪製結果並更新文字
       if (boxes && boxes.length) drawBoxes(boxes);
       resultEl.innerText = result;
       handleSpeech(result);
@@ -128,103 +148,115 @@ navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
   })
   .catch(e => console.error('無法啟用相機：', e));
 
+
 // ===== MiniMap 初始化 & 還原主地圖狀態 =====
+// 建立一個小地圖容器，並關閉預設的 attribution 及縮放按鈕
 const miniMap = L.map('miniMap', {
   attributionControl: false,
   zoomControl: false
 });
+// 使用 OpenStreetMap 圖磚，設定最大縮放層級為 19
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19
 }).addTo(miniMap);
 
-// 從 sessionStorage 讀取地圖狀態並恢復
+// 從 sessionStorage 讀取先前儲存的地圖狀態
 const saved = sessionStorage.getItem('mapState');
 if (saved) {
   const state = JSON.parse(saved);
 
-  // 還原中心與縮放
+  // 若有儲存中心點與縮放，則還原；否則使用預設座標
   if (state.center && state.zoom) {
     miniMap.setView([state.center.lat, state.center.lng], state.zoom);
   } else {
     miniMap.setView([22.999728, 120.227028], 13);
   }
 
-  // 還原使用者定位點
+  // 還原使用者定位點標記
   if (state.userLocation) {
     L.marker([state.userLocation.lat, state.userLocation.lng])
       .addTo(miniMap)
       .bindPopup('您的位置');
   }
-  // 還原目的地點
+  // 還原目的地標記
   if (state.destination) {
     L.marker([state.destination.lat, state.destination.lng])
       .addTo(miniMap)
       .bindPopup(state.destination.name || '目的地');
   }
-  // 還原路線並調整視野
+  // 還原路線圖層並自動調整地圖視野
   if (state.routeGeoJSON) {
     const mRoute = L.geoJSON(state.routeGeoJSON, { style: { color: 'blue', weight: 3 } })
       .addTo(miniMap);
     miniMap.fitBounds(mRoute.getBounds());
   }
-  // 若有導航步驟則顯示於 detect 頁面
+  // 若有導航步驟資料，呼叫 detect 頁面的顯示函式
   if (state.steps && state.steps.length) {
     showDetectNavigationInstruction(state.steps, state.userLocation);
   }
 } else {
-  // 無儲存資料時使用預設位置
+  // 無儲存資料時，預設顯示台灣某座標
   miniMap.setView([22.999728, 120.227028], 13);
 }
 
+
 // ===== 偵測頁面導航指示顯示與播報 =====
 function showDetectNavigationInstruction(steps, userLoc) {
+  // 顯示導航提示區塊
   const navBox = document.getElementById('navigationPrompt');
   navBox.style.display = 'block';
 
-  let idx = 0;
-  // 根據 Maneuver 型別與 modifier 轉中文指令
+  let idx = 0;  // 當前步驟索引
+
+  // 根據 maneuver 物件的 type 與 modifier，回傳中文指令
   function getManeuverText(m) {
     switch (m.type) {
       case "turn":
         if (m.modifier === "left")     return "左轉進入";
         if (m.modifier === "right")    return "右轉進入";
         if (m.modifier === "straight") return "直行進入";
-        return `${m.modifier} 轉入`;
+        return `${m.modifier} 轉入`;  // 其他方向
       case "arrive":
-        return "抵達";
+        return "抵達";  // 抵達終點
       default:
-        return `${m.type}`;
+        return `${m.type}`;  // 無法辨識時直接回傳原始 type
     }
   }
 
-  // 更新畫面文字並語音播報
+  // 更新頁面上顯示的文字指示，並以語音播報
   function update() {
     const step     = steps[idx];
-    const nextStep = steps[idx+1];
+    const nextStep = steps[idx + 1];
+    // 若存在下一步，播報距離與轉向；否則宣告抵達
     const speechText = nextStep
       ? `${Math.round(nextStep.distance)}公尺後${getManeuverText(nextStep.maneuver)}${nextStep.name || "無名道路"}`
       : "已抵達目的地";
 
+    // 更新畫面上「目前路段」與「下一步指示」
     document.getElementById('currentRoad').textContent    = `目前在：${step.name || "無名道路"}`;
     document.getElementById('nextInstruction').textContent = speechText;
-    speakNav(speechText); // 使用 speech.js 提供的 speakNav
+    // 呼叫語音播報函式（由 speech.js 提供）
+    speakNav(speechText);
   }
 
-  update();  // 首次播報
+  update();  // 首次播報與顯示
 
-  // 以 2 秒週期檢查使用者位置與下個導航點距離
+  // 每 2 秒檢查使用者位置，判斷是否已接近當前步驟點
   const checkNav = setInterval(() => {
+    // 將使用者位置與當前步驟的 maneuver 座標轉為 Leaflet LatLng
     const userLatLng   = L.latLng(userLoc.lat, userLoc.lng);
     const targetLatLng = L.latLng(
       steps[idx].maneuver.location[1],
       steps[idx].maneuver.location[0]
     );
-    // 若已接近則進入下一步
+    // 若距離小於 20 公尺，視為完成此步驟
     if (userLatLng.distanceTo(targetLatLng) < 20) {
       idx++;
       if (idx < steps.length) {
+        // 還有後續步驟，更新指示
         update();
       } else {
+        // 完成所有步驟：停止檢查並播報抵達
         clearInterval(checkNav);
         speakNav("您已抵達目的地");
       }

@@ -1,55 +1,53 @@
-from flask import Flask, render_template, request, jsonify  # 引入 Flask 核心功能與模板、請求、JSON 回傳
-import os                                            # 檔案路徑操作
-import base64                                        # Base64 解碼
-import cv2                                           # OpenCV 影像處理
-import numpy as np                                   # 數值運算
-from ultralytics import YOLO                         # Ultralytics YOLO 模型
+from flask import Flask, render_template, request, jsonify  # 引入 Flask 核心、模板與 JSON 回傳
+import os      # 檔案與路徑操作
+import base64  # Base64 編／解碼
+import cv2     # OpenCV 影像處理
+import numpy as np  # 數值運算
+from ultralytics import YOLO  # 載入 YOLO 模型
 
-# 建立 Flask 應用，指定模板與靜態資料夾路徑
+# 建立 Flask 應用，設定模板與靜態檔案資料夾
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
-# 定義 YOLO 模型路徑，指向權重檔 best.pt
+# 模型權重路徑：指向 upper/SeniorRod/yolov11_v8/weights/best.pt
 MODEL_PATH = os.path.join(
-    os.path.dirname(__file__),  # 目前 app.py 所在資料夾
-    "..",                     # 上層資料夾
-    "SeniorRod",              # 專案資料夾名稱
-    "yolov11_v8",             # 模型資料夾
-    "weights",                # 權重資料夾
-    "best.pt"                 # 權重檔案
+    os.path.dirname(__file__),
+    "..",
+    "SeniorRod",
+    "yolov11_v8",
+    "weights",
+    "best.pt"
 )
-# 載入模型，準備推論
+# 載入 YOLO 模型
 model = YOLO(MODEL_PATH)
 
 @app.route("/", methods=["GET"])
 def index():
-    """
-    首頁路由：處理 GET 請求，回傳 index.html 模板
-    """
+    """首頁：回傳 index.html"""
     return render_template("index.html")
 
 @app.route("/detect", methods=["GET", "POST"])
 def detect():
     """
-    偵測頁面路由：
-    - GET 請求：回傳 detect.html 模板
-    - POST 請求：接收前端影像、執行物件偵測、回傳結果
+    偵測頁面：
+    GET → 回傳 detect.html
+    POST → 接收前端影像、執行物件偵測、回傳結果
     """
     if request.method == "GET":
         return render_template("detect.html")
 
-    # ---------- 處理 POST 請求：影像解析與偵測 ----------
-    data = request.json.get("image", "")            # 從 JSON 取得 base64 圖片資料
-    header, encoded = data.split(",", 1)              # 分割標頭與編碼內容
-    # Base64 解碼並轉為 NumPy 陣列，再以 OpenCV 解碼成影像
+    # 解析 POST JSON 影像資料 (data:image/jpeg;base64,...)
+    data = request.json.get("image", "")
+    header, encoded = data.split(",", 1)
+    # 解碼並轉為 OpenCV 影像
     img = cv2.imdecode(
         np.frombuffer(base64.b64decode(encoded), dtype=np.uint8),
         cv2.IMREAD_COLOR
     )
 
-    # 使用 YOLO 模型進行推論，取得第一筆結果物件資訊
+    # 模型推論，取得第一筆結果
     result = model(img)[0]
 
-    # 回傳用的標註框資訊（加上類別與信心分數）
+    # 建立標註框清單：x1, y1, x2, y2, label, score
     boxes_info = []
     for box, cls, conf in zip(result.boxes.xyxy, result.boxes.cls, result.boxes.conf):
         x1, y1, x2, y2 = box.cpu().numpy().tolist()
@@ -62,31 +60,30 @@ def detect():
             "score": round(score, 2)
         })
 
-    # 取得影像尺寸，用以定義安全區域
+    # 定義安全區域：水平 20%-80%，垂直 50%-100%
     h, w = img.shape[:2]
-    safe_x1, safe_x2 = 0.2 * w, 0.8 * w  # 水平安全範圍
-    safe_y1, safe_y2 = 0.5 * h, h        # 垂直安全範圍
+    safe_x1, safe_x2 = 0.2 * w, 0.8 * w
+    safe_y1, safe_y2 = 0.5 * h, h
 
     region = None  # 初始化檢測區域
 
-    # ---------- 優先檢查 floor 類別 ----------
+    # 優先檢查 "floor" 類別，判斷台階方位
     for box, cls in zip(result.boxes.xyxy, result.boxes.cls):
         if result.names[int(cls)] == "floor":
-            # 算出框中心 x 座標
             cx = (box[0] + box[2]) / 2
-            # 根據中心位置判斷左、中、右
-            region = "左方" if cx < w / 3 else "右方" if cx > 2 * w / 3 else "前方"
+            region = "左方" if cx < w/3 else "右方" if cx > 2*w/3 else "前方"
             text = f"{region}台階 小心行走"
             break
 
-    # ---------- 若未偵測到 floor，檢查 obstacle ----------
+    # 若沒偵測到 floor，檢查其他障礙物是否超出安全區
     if region is None:
         viol = None
         for box in result.boxes.xyxy:
-            cx = (box[0]+box[2])/2; cy = (box[1]+box[3])/2
-            if not (safe_x1<=cx<=safe_x2 and safe_y1<=cy<=safe_y2):
-                region = "左方" if cx<w/3 else "右方" if cx>2*w/3 else "前方"
-                if region=="左方":
+            cx = (box[0] + box[2]) / 2
+            cy = (box[1] + box[3]) / 2
+            if not (safe_x1 <= cx <= safe_x2 and safe_y1 <= cy <= safe_y2):
+                region = "左方" if cx < w/3 else "右方" if cx > 2*w/3 else "前方"
+                if region == "左方":
                     text = "左方障礙物  靠右行走"
                 elif region == "右方":
                     text = "右方障礙物  靠左行走"
@@ -94,16 +91,16 @@ def detect():
                     text = "前方障礙物  靠外側行走"
                 break
 
-    # ---------- 若仍無任何危險，顯示安全訊息 ----------
+    # 若仍無危險，顯示安全訊息
     if region is None:
         text = "前方安全 可繼續直行"
 
-    # 回傳 JSON，包含遮罩座標與文字提示
+    # 回傳 JSON 包含標註框與提示文字
     return jsonify({
         "boxes": boxes_info,
         "result": text
     })
 
 if __name__ == "__main__":
-    # 啟動 Flask 開發伺服器：監聽所有介面，5000 埠，開啟偵錯模式
+    # 啟動 Flask 開發伺服器 (host: 0.0.0.0, port:5000, debug on)
     app.run(host="0.0.0.0", port=5000, debug=True)

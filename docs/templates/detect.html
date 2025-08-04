@@ -5,26 +5,28 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <title>即時辨識</title>
 
-  <!-- Leaflet 地圖樣式 -->
+  <!-- 引入 Leaflet 地圖樣式 -->
   <link rel="stylesheet" href="{{ url_for('static', filename='leaflet/leaflet.css') }}" />
 
-  <!-- Font Awesome 圖示庫 -->
+  <!-- Font Awesome：提供按鈕圖示 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous"></script>
 
-  <!-- 頁面樣式 -->
+  <!-- 自訂偵測頁面樣式 -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/detect.css') }}">
 </head>
 
 <body class="detect-page">
   <div class="app-container">
 
+    <!-- 偵測頁面載入動畫 -->
     <div id="loader-wrapper">
-    <div class="loader-content">
-    <div class="spinner"></div>
-    <div class="loading-text">loading...</div>
+      <div class="loader-content">
+        <div class="spinner"></div>
+        <div class="loading-text">loading...</div>
+      </div>
     </div>
-  </div>
-    <!-- 語音控制 -->
+
+    <!-- 語音控制：開關與說明按鈕 -->
     <div class="speech-controls" style="position:fixed; top:10px; right:10px; z-index:10000;">
       <label class="speech-btn" title="語音開關">
         <input type="checkbox" id="speechToggle" checked>
@@ -36,53 +38,56 @@
       </button>
     </div>
 
-    <!-- 語音提示 -->
+    <!-- 語音播報提示 -->
     <div id="speechNotice" class="speech-notice" style="display:none;">
       語音播報開啟中…
     </div>
 
-    <!-- 相機與畫面 -->
+    <!-- 相機串流與遮罩層：video 與 canvas -->
     <div class="camera-container">
       <video id="video" autoplay muted></video>
       <canvas id="overlay"></canvas>     
     </div>
     
-    <!-- 辨識結果 -->
+    <!-- 辨識結果顯示框 -->
     <div class="result-box">
       <div class="result-label">辨識結果：</div>
       <div id="result" class="result-content"></div>
     </div>
 
-    <!-- 導航提示 -->
+    <!-- 偵測頁面導航提示：同 index.html 的設計 -->
     <div id="navigationPrompt" class="navigation-prompt" style="display:none;">
       <div id="currentRoad">正在行駛：未知路段</div>
       <div id="nextInstruction">即將進入：未知道路</div>
     </div>
 
-    <!-- 地圖顯示區 -->
+    <!-- 縮略地圖顯示區 -->
     <div id="miniMap" class="mini-map"></div>
+    <!-- 底部切換按鈕：語音、地圖 -->
     <div class="split-buttons">
-    <button class="half-btn" id="voiceCommandBtn">
-      🎤
-      <span class="btn-text">語音</span>
-    </button>
-    <div class="divider"></div>
-    <button class="half-btn" id="mapBtn">
-      🗺️
-      <span class="btn-text">地圖</span>
-    </button>
-  </div>
-  
-  <!-- 載入腳本 -->
-  <script src="{{ url_for('static', filename='leaflet/leaflet.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/speech.js') }}"></script>
-  <script>
-    speechSynthesis.cancel(); // 清除 index 頁遺留的語音
-  </script>
-  <script>
-    initSpeechUI();
-    speakNav("語音播報開啟中…");
-  </script>
-  <script src="{{ url_for('static', filename='js/detect.js') }}"></script>
-</body>
+      <button class="half-btn" id="voiceCommandBtn">
+        🎤
+        <span class="btn-text">語音</span>
+      </button>
+      <div class="divider"></div>
+      <button class="half-btn" id="mapBtn">
+        🗺️
+        <span class="btn-text">地圖</span>
+      </button>
+    </div>
+    
+    <!-- 載入 Leaflet、語音與偵測行為腳本 -->
+    <script src="{{ url_for('static', filename='leaflet/leaflet.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/speech.js') }}"></script>
+    <script>
+      // 清除 index 頁面遺留的語音播報
+      speechSynthesis.cancel();
+    </script>
+    <script>
+      // 初始化語音 UI 與提示
+      initSpeechUI();
+      speakNav("語音播報開啟中…");
+    </script>
+    <script src="{{ url_for('static', filename='js/detect.js') }}"></script>
+  </body>
 </html>
