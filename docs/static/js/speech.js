@@ -30,12 +30,17 @@ window.initSpeechUI = function () {
   speechIcon.className  = speechEnabled ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark';
   speechToggle.title    = speechEnabled ? '語音：開' : '語音：關';
 
-  // 監聽開關變化，更新狀態並播報
+  // 監聽開關變化，更新狀態並播報/靜音
   speechToggle.addEventListener('change', () => {
     speechEnabled = speechToggle.checked;
     speechIcon.className = speechEnabled ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark';
     speechToggle.title   = speechEnabled ? '語音：開' : '語音：關';
-    if (speechEnabled) speakNav('語音已開啟');
+    if (speechEnabled) {
+      speakNav('語音已開啟');
+    } else {
+      // ✅ 關閉時立即停止所有語音輸出（完全靜音）
+      speechSynthesis.cancel();
+    }
   });
 
   // 三連擊任意空白區域也可切換語音開關
@@ -196,7 +201,8 @@ window.startVoiceCommand = function ({ mode }) {
                   speechToggle.checked = false;
                   speechToggle.dispatchEvent(new Event('change'));
                 }
-                speakNav('朗讀模式已關閉');
+                // ✅ 關閉時不再播報任何提示（保持安靜）
+                // （原本這裡有 speakNav('朗讀模式已關閉')，已移除）
               } else {
                 speakNav('請再說一次，需要開啟或關閉');
               }
@@ -341,7 +347,8 @@ window.startVoiceCommand = function ({ mode }) {
                   speechToggle.checked = false;
                   speechToggle.dispatchEvent(new Event('change'));
                 }
-                speakNav('朗讀模式已關閉');
+                // ✅ 關閉時保持安靜，不播報任何提示
+                // （原本這裡有 speakNav('朗讀模式已關閉')，已移除）
               } else {
                 // 無法識別再提示
                 speakNav('請再說一次，需要開啟或關閉');

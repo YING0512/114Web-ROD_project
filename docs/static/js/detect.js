@@ -78,7 +78,7 @@ function drawBoxes(boxes) {
 }
 
 // ===== 語音播報辨識結果（冷卻 & 去重） =====
-const SPEECH_COOLDOWN = 5000; // 語音最小間隔 (ms)
+const SPEECH_COOLDOWN = 3000; // 語音最小間隔 (ms)
 const FRAME_THRESHOLD = 3;   // 幀數門檻
 let lastSpeechTime   = 0;    // 上次播報時間
 let movementCounter  = 0;    // 累計驗證次數
