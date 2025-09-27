@@ -81,19 +81,10 @@ function createDefaultMarkerIcon() {
 
 // 依 currentHeading 旋轉使用者圖示
 function rotateUserIcon() {
-  if (!userMarker) {
-    console.warn("userMarker 尚未建立");
-    return;
-  }
-
+  if (!userMarker) return;
   const el = userMarker.getElement();
   const iconDiv = el?.querySelector('.arrow-icon');
-  if (!iconDiv) {
-    console.warn("❌ 無法找到 .arrow-icon，可能使用的是預設 icon");
-    return;
-  }
-
-  // 設定 CSS transform，將箭頭旋轉至使用者當前朝向
+  if (!iconDiv) return;
   iconDiv.style.transform = `translate(-50%, -50%) rotate(${currentHeading}deg)`;
 }
 
@@ -172,9 +163,7 @@ function updateUserLocation(lat, lng) {
 // 若瀏覽器支援地理定位，持續監聽位置變化
 if (navigator.geolocation) {
   navigator.geolocation.watchPosition(
-    pos => {
-      updateUserLocation(pos.coords.latitude, pos.coords.longitude);
-    },
+    pos => { updateUserLocation(pos.coords.latitude, pos.coords.longitude); },
     () => alert('自動定位失敗，請手動點擊定位按鈕')
   );
 } else {
@@ -238,25 +227,36 @@ function handleOrientation(event) {
 // 取得搜尋輸入框與結果容器
 const searchInput      = document.getElementById('searchInput');
 const resultsContainer = document.getElementById('searchResults');
+const nextPageBtn      = document.getElementById('nextPageBtn');
 let debounceTimer = null;
+
+// 🔍（可選）點擊放大鏡觸發一次搜尋
+document.getElementById('searchBtn').addEventListener('click', () => {
+  searchInput.dispatchEvent(new Event('input', {bubbles:true}));
+});
 
 // 文字輸入觸發搜尋（僅更新列表，不進行語音播報）
 searchInput.addEventListener('input', (event) => {
   const q = searchInput.value.trim();
-  // 若輸入為空，清空結果並返回
-  if (!q) return resultsContainer.innerHTML = '';
+  if (!q) {
+    resultsContainer.innerHTML = '';
+    hideNextPageBtn();
+    return;
+  }
   // 若為手動輸入，關閉語音選擇流程
-  if (event.isTrusted) isVoiceSelection = false;
-  // 清除先前定時器，防抖處理
+  if (event.isTrusted) window.isVoiceSelection = false;
+
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
     // 使用 Nominatim API 搜尋地點
     fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}`)
       .then(r => r.json())
       .then(data => {
-        // 無結果時顯示提示
-        if (!data.length) return resultsContainer.innerHTML = '<li>找不到地點</li>';
-        // 儲存搜尋資料並初始化批次索引
+        if (!data.length) {
+          resultsContainer.innerHTML = '<li>找不到地點</li>';
+          hideNextPageBtn();
+          return;
+        }
         searchResultsData = data;
         currentBatchStart = 0;
         // 顯示第一批結果（最多 5 筆）
@@ -266,6 +266,7 @@ searchInput.addEventListener('input', (event) => {
       .catch(() => {
         // 錯誤時顯示搜尋錯誤
         resultsContainer.innerHTML = '<li>搜尋錯誤</li>';
+        hideNextPageBtn();
       });
   }, 300);
 });
@@ -276,26 +277,63 @@ function displayBatch() {
   resultsContainer.innerHTML = '';
   // 取出當前批次資料
   const batch = searchResultsData.slice(currentBatchStart, currentBatchStart + 5);
-  batch.forEach((p, i) => {
-    // 建立列表項目
+  batch.forEach((p) => {
     const li = document.createElement('li');
     li.textContent = p.display_name;
     li.style.cursor = 'pointer';
-    // 點擊後處理目的地選擇
-    li.addEventListener('click', () => handleDestinationSelect(p));
+    li.addEventListener('click', () => {
+      // 選了目的地就清單歸零並隱藏下一頁
+      handleDestinationSelect(p);
+      resultsContainer.innerHTML = '';
+      hideNextPageBtn();
+    });
     resultsContainer.appendChild(li);
   });
-  // *** 此函式僅負責列表渲染，語音辨識由 voiceBatchSelect 處理 ***
+
+  // 更新「下一頁」按鈕：只在手動模式且仍有下一批時顯示
+  updateNextPageBtn();
 }
 
-// ===== 語音批次選擇流程 =====
+// ===== 下一頁按鈕顯示／定位 =====
+function updateNextPageBtn() {
+  const hasMore = (currentBatchStart + 5) < searchResultsData.length;
+  // 僅在「非語音選擇模式」且有更多結果時顯示
+  if (!window.isVoiceSelection && hasMore && resultsContainer.childElementCount > 0) {
+    // 計算按鈕位置：在清單底下 10px
+    const ulTopPx = 71; // 與 CSS .search-results.top 同步
+    const ulMaxH  = 200; // 與 CSS .search-results.max-height 同步
+    const ulH     = Math.min(resultsContainer.scrollHeight, ulMaxH);
+    nextPageBtn.style.top = (ulTopPx + ulH + 10) + 'px';
+    nextPageBtn.style.display = 'block';
+  } else {
+    hideNextPageBtn();
+  }
+}
+function hideNextPageBtn() {
+  nextPageBtn.style.display = 'none';
+}
+
+// 視窗尺寸改變時，若按鈕顯示中則重新定位
+window.addEventListener('resize', () => {
+  if (nextPageBtn.style.display !== 'none') updateNextPageBtn();
+});
+
+// ===== 下一頁按鈕事件 =====
+nextPageBtn.addEventListener('click', () => {
+  // 手動模式的循環：若超出長度則隱藏按鈕（不回到第一頁）
+  currentBatchStart += 5;
+  displayBatch();
+  // 捲回清單頂端，避免使用者沒看到新一批的第一項
+  resultsContainer.scrollTop = 0;
+});
+
+// ===== 語音批次選擇流程（舊邏輯保留，不影響本按鈕） =====
 function voiceBatchSelect() {
   // 僅在語音選擇模式且有結果時執行
   if (!window.isVoiceSelection || !window.searchResultsData.length) return;
 
   // 取得當前批次
   const batch = window.searchResultsData.slice(window.currentBatchStart, window.currentBatchStart + 5);
-  const numerals = ['一','二','三','四','五'];
   let i = 0;
 
   // 依序唸出每個選項
@@ -309,7 +347,7 @@ function voiceBatchSelect() {
     } else {
       // 唸完後提示使用者選擇或換組
       speechSynthesis.cancel();
-      const tip = new SpeechSynthesisUtterance('請說第幾筆選擇，或說下一組');
+      const tip = new SpeechSynthesisUtterance('請說第幾筆選擇，或說下一頁');
       tip.lang = 'zh-TW';
       tip.onend = () => {
         // 延遲觸發語音辨識
@@ -348,8 +386,10 @@ function voiceBatchSelect() {
       // 語音包含「下／下一／再來」時，切換下一批
       if (/下|下一|再來/.test(transcript)) {
         currentBatchStart += 5;
+        // 語音模式維持原本循環行為（回到第一頁）
         if (currentBatchStart >= searchResultsData.length) currentBatchStart = 0;
-        voiceBatchSelect();
+        displayBatch(); // 讓畫面也跟著換
+        // 語音模式仍由 speech.js 重新觸發朗讀
         return;
       }
       // 無法辨識時提示並重試
@@ -392,6 +432,7 @@ function handleDestinationSelect(place) {
   map.setView([lat, lon], 15);
   // 清空搜尋結果列表與輸入欄位
   resultsContainer.innerHTML = '';
+  hideNextPageBtn();
   searchInput.value = '';
 
   // 若非語音流程時，詢問是否立即導航
@@ -490,15 +531,8 @@ function addCancelNavigationButton() {
     // 隱藏導航提示
     hideNavigationPrompt();
 
-    // 移除路徑圖層與目的地標記
-    if (routeLayer) {
-      map.removeLayer(routeLayer);
-      routeLayer = null;
-    }
-    if (destinationMarker) {
-      map.removeLayer(destinationMarker);
-      destinationMarker = null;
-    }
+    if (routeLayer) { map.removeLayer(routeLayer); routeLayer = null; }
+    if (destinationMarker) { map.removeLayer(destinationMarker); destinationMarker = null; }
 
     // 重置導航狀態
     isNavigating = false;
@@ -525,11 +559,7 @@ function addCancelNavigationButton() {
     resultsContainer.style.display = 'block';
     searchInput.disabled = false;
 
-    // 停止位置檢查計時器
-    if (positionCheck) {
-      clearInterval(positionCheck);
-      positionCheck = null;
-    }
+    if (positionCheck) { clearInterval(positionCheck); positionCheck = null; }
 
     // 清空文字導航指示
     document.getElementById('currentRoad').textContent = '';
@@ -543,7 +573,6 @@ function addCancelNavigationButton() {
   // 將取消按鈕新增到導航提示容器
   navBox.appendChild(cancelBtn);
 }
-
 
 // ===== 顯示導航指示（含語音播報） =====
 function showNavigationInstruction(steps) {
@@ -602,10 +631,7 @@ function showNavigationInstruction(steps) {
     // 建立 Leaflet LatLng 物件
     const userLatLng = L.latLng(userLocation[0], userLocation[1]);
     const step       = steps[currentStepIndex];
-    const latLng     = L.latLng(
-      step.maneuver.location[1],
-      step.maneuver.location[0]
-    );
+    const latLng     = L.latLng(step.maneuver.location[1], step.maneuver.location[0]);
 
     // 若使用者接近當前步驟目的地點（20 公尺內），則進入下一步
     if (userLatLng.distanceTo(latLng) < 20) {
@@ -624,6 +650,7 @@ function showNavigationInstruction(steps) {
     }
   }, 2000);  // 每 2 秒檢查一次
 }
+
 // ===== 切換到影像辨識前，儲存當前地圖狀態 =====
 document.getElementById('cameraBtn').addEventListener('click', () => {
   // 讀取地圖中心與縮放
@@ -656,9 +683,6 @@ window.addEventListener('load', function () {
   if (loader) {
     // 加入淡出效果 class
     loader.classList.add('fade-out');
-    // 2 秒後移除整個 loading wrapper
-    setTimeout(() => {
-      loader.remove();
-    }, 2000);
+    setTimeout(() => { loader.remove(); }, 2000);
   }
 });

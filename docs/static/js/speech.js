@@ -254,9 +254,9 @@ window.startVoiceCommand = function ({ mode }) {
           u.onend = () => { i++; speakBatchOptions(); };  // 唸完後遞迴至下一筆
           speechSynthesis.speak(u);
         } else {
-          // 朗讀完畢後提示用戶選擇或換下一組
+          // 朗讀完畢後提示用戶選擇或換下一頁
           speechSynthesis.cancel();
-          const tip = new SpeechSynthesisUtterance('請說第幾筆選擇，或說下一組');
+          const tip = new SpeechSynthesisUtterance('請說第幾筆選擇，或說下一頁');
           tip.lang = 'zh-TW';
           tip.onend = () => {
             setTimeout(startVoiceSelect, 200);  // 延遲觸發語音辨識
@@ -291,14 +291,14 @@ window.startVoiceCommand = function ({ mode }) {
               return;
             }
           }
-          // 若講到「下一組」等關鍵字，切到下一批
+          // 若講到「下一頁」等關鍵字，切到下一批
           if (/下|下一|再來/.test(transcript)) {
             window.currentBatchStart += 5;
             displayBatch();  // 更新畫面列表
             return;
           }
           // 其他情況重試
-          speakNav('請再說一次，第幾筆或下一組');
+          speakNav('請再說一次，第幾筆或下一頁');
           setTimeout(window.voiceBatchSelect, 800);
         };
       }

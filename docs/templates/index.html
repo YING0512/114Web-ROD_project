@@ -4,7 +4,7 @@
   <!-- 設定文件編碼與行動裝置視窗初始配置 -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>map&navigation</title>
+  <title>街景辨識介面</title>
   <!-- 引入 Leaflet 地圖樣式 -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   <!-- Font Awesome：提供語音按鈕圖示 -->
@@ -56,6 +56,8 @@
 
   <!-- 搜尋結果列表 -->
   <ul id="searchResults" class="search-results"></ul>
+  <!-- ✅ 手動搜尋「下一頁」按鈕（預設隱藏，僅在有更多結果且非語音模式時顯示） -->
+  <button id="nextPageBtn" class="next-page-btn" style="display:none;">下一頁</button>
 
   <!-- 地圖容器：Leaflet 地圖顯示區 -->
   <div id="map-container">
