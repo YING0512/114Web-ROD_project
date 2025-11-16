@@ -51,28 +51,44 @@ function drawMasks(masks) {
 
 // ===== 繪製框與標籤 =====
 function drawBoxes(boxes) {
-  // 清空畫布
   ctx.clearRect(0, 0, overlay.width, overlay.height);
-  // 設定框線樣式
+
   ctx.strokeStyle = 'lime';
   ctx.lineWidth = 2;
-  // 設定文字樣式
   ctx.font = "16px Arial";
   ctx.fillStyle = "rgba(0,0,0,0.5)";
   ctx.textBaseline = "top";
 
+  const DIST_K = 800; // 距離估算常數，可自行調整
+
   boxes.forEach(box => {
     const { x1, y1, x2, y2, label, score } = box;
-    // 畫出偵測框
+
+    // 計算框高度（像素）
+    const boxHeight = y2 - y1;
+
+    // 避免框太小算出無限大距離
+    let distance = (DIST_K / boxHeight);
+    if (distance > 20) distance = 20; // 限制最大距離 20m，可調整
+
+    // 四捨五入到小數1位
+    const distanceText = distance.toFixed(1) + "m";
+
+    // 畫框
     ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
-    // 建立標籤文字
-    const tag = `${label} ${Math.round(score * 100)}%`;
+
+    // 產生標籤文字（加入距離）
+    const tag = `${label} ${Math.round(score * 100)}%  ${distanceText}`;
+
     const textWidth = ctx.measureText(tag).width;
-    // 畫出黑色半透明底色
+
+    // 半透明背景
     ctx.fillRect(x1, y1 - 20, textWidth + 6, 20);
-    // 畫出白色文字
+
+    // 文字
     ctx.fillStyle = "#fff";
     ctx.fillText(tag, x1 + 3, y1 - 20 + 3);
+
     ctx.fillStyle = "rgba(0,0,0,0.5)";
   });
 }
@@ -83,6 +99,7 @@ const FRAME_THRESHOLD = 3;   // 幀數門檻
 let lastSpeechTime   = 0;    // 上次播報時間
 let movementCounter  = 0;    // 累計驗證次數
 let lastMovement     = "";   // 上次播報文字
+let speechTextFromBoxes = "";
 
 function speak(text) {
   const now = Date.now();
